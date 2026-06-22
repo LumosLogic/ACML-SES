@@ -25,18 +25,32 @@ export async function sendEmail(params: {
   body: string;
   isHtml: boolean;
   replyTo?: string;
-}): Promise<void> {
+  cc?: string;
+  bcc?: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
+}): Promise<string> {
   const transport = getTransporter();
-  await transport.sendMail({
+  const info = await transport.sendMail({
     from: params.from,
     to: params.to,
+    cc: params.cc,
+    bcc: params.bcc,
     subject: params.subject,
     [params.isHtml ? 'html' : 'text']: params.body,
     replyTo: params.replyTo,
+    attachments: params.attachments?.map(a => ({
+      filename: a.filename,
+      content: a.content,
+      contentType: a.contentType,
+    })),
     headers: {
       'X-SES-CONFIGURATION-SET': config.ses.configSet,
     },
   });
+  // SES SMTP response looks like: "250 Ok 0109019ecf4e7bd4-xxx-000000"
+  // SNS events use this same ID, so extract it from the response
+  const match = (info.response || '').match(/Ok\s+(\S+)/);
+  return match ? match[1] : (info.messageId || '').replace(/[<>]/g, '').split('@')[0];
 }
 
 export async function verifyConnection(): Promise<boolean> {

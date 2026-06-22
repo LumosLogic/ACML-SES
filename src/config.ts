@@ -14,10 +14,19 @@ export const config = {
     configSet: process.env.SES_CONFIG_SET || 'recruitx-config',
     defaultFrom: process.env.SES_DEFAULT_FROM || '',
     sendRate: parseInt(process.env.SES_SEND_RATE || '14'),
+    allowedFromDomains: (process.env.ALLOWED_FROM_DOMAINS || '')
+      .split(',').map(d => d.trim()).filter(Boolean),
   },
+  maxRecipientsPerRequest: parseInt(process.env.MAX_RECIPIENTS || '10000'),
+  bulkThreshold: parseInt(process.env.BULK_THRESHOLD || '50'),
+  unsubscribeBaseUrl: process.env.UNSUBSCRIBE_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
+  unsubscribeSecret: process.env.UNSUBSCRIBE_SECRET || 'change-this-in-production',
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://recruitx:recruitx123@localhost:5432/recruitx',
+  apiKey: process.env.API_KEY || '',          // legacy fallback
+  adminKey: process.env.ADMIN_KEY || '',
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',

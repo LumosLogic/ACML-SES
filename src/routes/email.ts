@@ -2,7 +2,9 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import { sendEmail } from '../services/mailer';
+import { logEmail } from '../services/emailLog';
 import { emailQueue } from '../services/queue';
 import { config } from '../config';
 
@@ -146,6 +148,78 @@ router.post('/send-bulk/csv', upload.single('file'), async (req: Request, res: R
       status: 'queued',
       poll_url: `/api/job-status/${job.id}`,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/send-with-attachment
+// Send a single email with one file attachment (multipart/form-data)
+router.post('/send-with-attachment', upload.single('attachment'), async (req: Request, res: Response, next: NextFunction) => {
+  const { to, subject, body, from, replyTo, isHtml } = req.body;
+
+  if (!to || !subject || !body) {
+    res.status(400).json({ error: '"to", "subject", and "body" are required' });
+    return;
+  }
+
+  try {
+    const attachments = req.file ? [{
+      filename: req.file.originalname,
+      content: req.file.buffer,
+      contentType: req.file.mimetype,
+    }] : undefined;
+
+    const messageId = await sendEmail({
+      to,
+      from: from || config.ses.defaultFrom,
+      subject,
+      body,
+      isHtml: isHtml !== 'false',
+      replyTo,
+      attachments,
+    });
+
+    await logEmail({
+      id: randomUUID(),
+      messageId,
+      recipient: to,
+      subject,
+      sentAt: new Date().toISOString(),
+      status: 'sent',
+      jobId: 'direct',
+    });
+
+    res.json({ status: 'sent', messageId, attachment: req.file?.originalname ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/recent-emails?limit=100&days=7
+// GET /api/recent-emails?from=2026-06-01&to=2026-06-18
+router.get('/recent-emails', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(parseInt((req.query.limit as string) || '100'), 1000);
+    const { getRecentEmails } = await import('../services/emailLog');
+
+    let from: Date | undefined;
+    let to: Date | undefined;
+
+    if (req.query.from && req.query.to) {
+      from = new Date(req.query.from as string);
+      to = new Date(req.query.to as string);
+      to.setHours(23, 59, 59, 999);
+    } else if (req.query.days) {
+      const days = parseInt(req.query.days as string);
+      from = new Date();
+      from.setDate(from.getDate() - days);
+      from.setHours(0, 0, 0, 0);
+      to = new Date();
+    }
+
+    const emails = await getRecentEmails(limit, from, to);
+    res.json({ emails });
   } catch (err) {
     next(err);
   }

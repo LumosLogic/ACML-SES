@@ -69,4 +69,30 @@ router.get('/jobs', async (_req: Request, res: Response) => {
   });
 });
 
+// DELETE /api/job/:jobId
+// Cancel a queued or scheduled job. Cannot cancel a job already being processed.
+router.delete('/job/:jobId', async (req: Request, res: Response) => {
+  const { jobId } = req.params;
+
+  const job = await emailQueue.getJob(jobId);
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+
+  const state = await job.getState();
+  if (state === 'active') {
+    res.status(409).json({ error: 'Job is currently being processed and cannot be cancelled.' });
+    return;
+  }
+
+  if (state === 'completed' || state === 'failed') {
+    res.status(409).json({ error: `Job is already ${state}.` });
+    return;
+  }
+
+  await job.remove();
+  res.json({ message: 'Job cancelled successfully', job_id: jobId, was_state: state });
+});
+
 export default router;
