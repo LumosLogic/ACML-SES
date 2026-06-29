@@ -73,7 +73,7 @@ export default function Dashboard() {
       const [statsData, jobsData, healthData] = await Promise.allSettled([
         isAdmin && selectedClientId
           ? getAdminClientStats(selectedClientId, preset === "custom" ? 7 : days)
-          : isClient && selectedClientId
+          : isClient
             ? getClientStats(preset === "custom" && customFrom && customTo ? { from: customFrom, to: customTo } : { days })
             : getStats(preset === "custom" && customFrom && customTo ? { from: customFrom, to: customTo } : { days }),
         getJobs(),

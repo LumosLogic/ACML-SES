@@ -128,7 +128,7 @@ export default function RecentEmailsPage() {
         data = { emails: adminData.emails as EmailLogEntry[] }
       } else if (isClient) {
         const clientData = await getClientEmails({ limit })
-        data = { emails: clientData.emails as EmailLogEntry[] }
+        data = { emails: clientData.emails as unknown as EmailLogEntry[] }
       } else {
         data = await getRecentEmails(params)
       }
