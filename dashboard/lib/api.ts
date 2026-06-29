@@ -236,8 +236,8 @@ export interface DbStatsRow {
 export interface DbStats {
   summary: DbStatsSummary
   timeseries: DbStatsRow[]
-  from: string
-  to: string
+  from?: string
+  to?: string
 }
 
 export async function getStats(params: { days?: number; from?: string; to?: string }): Promise<DbStats> {
