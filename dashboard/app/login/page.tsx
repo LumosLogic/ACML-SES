@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import { setToken } from "@/lib/auth"
 
-const BASE_URL = "http://localhost:3006"
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3006"
 
 export default function LoginPage() {
   const router = useRouter()

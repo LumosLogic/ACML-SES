@@ -6,6 +6,8 @@ export const pool = new Pool({ connectionString: config.databaseUrl });
 export async function initDb(): Promise<void> {
   // Run column migrations FIRST so indexes on new columns don't fail
   await pool.query(`ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS client_id UUID`).catch(() => {});
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => {});
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email) WHERE email IS NOT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS allowed_domain TEXT NOT NULL DEFAULT ''`).catch(() => {});
   await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_host TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_port INTEGER`).catch(() => {});
@@ -55,12 +57,14 @@ export async function initDb(): Promise<void> {
     CREATE TABLE IF NOT EXISTS users (
       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       username      TEXT UNIQUE NOT NULL,
+      email         TEXT,
       password_hash TEXT NOT NULL,
       role          TEXT NOT NULL DEFAULT 'client',
       client_id     UUID,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email) WHERE email IS NOT NULL;
   `);
 
   // Bootstrap admin user from env vars if no admin exists yet
@@ -70,10 +74,16 @@ export async function initDb(): Promise<void> {
       const { hashPassword } = await import('./authService');
       const hash = await hashPassword(config.adminPassword);
       await pool.query(
-        `INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin') ON CONFLICT (username) DO NOTHING`,
-        [config.adminUsername.toLowerCase(), hash]
+        `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, 'admin') ON CONFLICT (username) DO NOTHING`,
+        [config.adminUsername.toLowerCase(), config.adminEmail || null, hash]
       );
       console.log(`[db] Admin user "${config.adminUsername}" created`);
+    } else if (config.adminEmail) {
+      // Backfill email on existing admin if not set
+      await pool.query(
+        `UPDATE users SET email = $1 WHERE role = 'admin' AND email IS NULL`,
+        [config.adminEmail.toLowerCase()]
+      );
     }
   }
 

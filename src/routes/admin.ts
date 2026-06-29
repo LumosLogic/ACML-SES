@@ -165,7 +165,7 @@ router.get('/clients/:id/emails', async (req: Request, res: Response) => {
 // GET /admin/users
 router.get('/users', async (_req: Request, res: Response) => {
   const { rows } = await pool.query(
-    `SELECT u.id, u.username, u.role, u.client_id, u.created_at,
+    `SELECT u.id, u.username, u.email, u.role, u.client_id, u.created_at,
             k.client_name, k.allowed_domain
      FROM users u
      LEFT JOIN api_keys k ON k.id = u.client_id
@@ -175,9 +175,10 @@ router.get('/users', async (_req: Request, res: Response) => {
 });
 
 // POST /admin/users — create admin or client user
-// Body: { username, password, role: 'admin'|'client', client_id?: string }
+// Body: { username, email?, password, role: 'admin'|'client', client_id?: string }
 router.post('/users', async (req: Request, res: Response) => {
   const username  = (req.body.username as string | undefined)?.trim().toLowerCase();
+  const email     = (req.body.email as string | undefined)?.trim().toLowerCase() || null;
   const password  = (req.body.password as string | undefined);
   const role      = (req.body.role as string | undefined) || 'client';
   const client_id = (req.body.client_id as string | undefined) || null;
@@ -191,12 +192,12 @@ router.post('/users', async (req: Request, res: Response) => {
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO users (username, password_hash, role, client_id) VALUES ($1, $2, $3, $4) RETURNING id, username, role, client_id, created_at`,
-      [username, hash, role, client_id]
+      `INSERT INTO users (username, email, password_hash, role, client_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role, client_id, created_at`,
+      [username, email, hash, role, client_id]
     );
     res.status(201).json({ user: rows[0] });
   } catch (err: unknown) {
-    if ((err as { code?: string }).code === '23505') { res.status(409).json({ error: 'Username already exists' }); return; }
+    if ((err as { code?: string }).code === '23505') { res.status(409).json({ error: 'Username or email already exists' }); return; }
     throw err;
   }
 });

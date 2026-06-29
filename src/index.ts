@@ -10,6 +10,7 @@ import { rateLimiter, dashboardLimiter } from './middleware/rateLimiter';
 import sendRoutes from './routes/send';
 import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/admin';
+import clientRoutes from './routes/clientRoutes';
 import unsubscribeRoutes from './routes/unsubscribe';
 import suppressionRoutes from './routes/suppressions';
 import emailRoutes from './routes/email';
@@ -60,6 +61,9 @@ app.use('/auth', authRoutes);
 
 // Admin routes — JWT + admin role required
 app.use('/admin', requireAuth, requireAdminRole, adminRoutes);
+
+// Client self-service routes — JWT only (scoped to their own client_id)
+app.use('/client', requireAuth, clientRoutes);
 
 // Send routes — strict rate limit (multipart + JSON)
 app.use('/api', rateLimiter, requireApiKey, sendRoutes);

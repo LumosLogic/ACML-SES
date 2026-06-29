@@ -3,9 +3,8 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, Mail, LogOut, Key, Users, Building2 } from "lucide-react"
-import { clearAuth, decodeToken } from "@/lib/auth"
+import { clearAuth } from "@/lib/auth"
 import { useClient } from "@/lib/clientContext"
-import { useEffect, useState } from "react"
 
 const clientNavItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -22,24 +21,14 @@ const adminNavItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { role, clients, selectedClientId, setSelectedClientId } = useClient()
-  const [username, setUsername] = useState("")
-  const [userRole, setUserRole] = useState("")
-
-  useEffect(() => {
-    const payload = decodeToken()
-    if (payload) {
-      setUsername(payload.username)
-      setUserRole(payload.role)
-    }
-  }, [])
+  const { role, clients, selectedClientId, selectedClientName, setSelectedClientId, username } = useClient()
 
   function handleLogout() {
     clearAuth()
     router.replace("/login")
   }
 
-  const navItems = userRole === "admin" ? adminNavItems : clientNavItems
+  const navItems = role === "admin" ? adminNavItems : clientNavItems
   const initials = username ? username.slice(0, 2).toUpperCase() : "?"
 
   return (
@@ -47,6 +36,16 @@ export function Sidebar() {
       <div className="px-5 py-5 border-b border-slate-700">
         <h2 className="text-white font-bold text-sm tracking-wide uppercase">Email Dashboard</h2>
       </div>
+
+      {/* Company name — client role */}
+      {role === "client" && selectedClientName && (
+        <div className="px-3 pt-3 pb-1">
+          <p className="text-xs text-slate-500 uppercase tracking-wide px-2 mb-1.5 flex items-center gap-1.5">
+            <Building2 className="h-3 w-3" /> Company
+          </p>
+          <p className="text-xs text-white px-2.5 py-2 bg-slate-800 rounded-lg truncate">{selectedClientName}</p>
+        </div>
+      )}
 
       {/* Company selector — admin only */}
       {role === "admin" && clients.length > 0 && (
@@ -93,9 +92,9 @@ export function Sidebar() {
           <div className="min-w-0">
             <p className="text-white text-sm font-medium truncate capitalize">{username || "—"}</p>
             <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium ${
-              userRole === "admin" ? "bg-indigo-500/20 text-indigo-300" : "bg-emerald-500/20 text-emerald-300"
+              role === "admin" ? "bg-indigo-500/20 text-indigo-300" : "bg-emerald-500/20 text-emerald-300"
             }`}>
-              {userRole || "—"}
+              {role || "—"}
             </span>
           </div>
         </div>

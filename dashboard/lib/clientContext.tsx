@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { decodeToken } from "./auth"
-import { getAdminClients, ClientKey } from "./api"
+import { getAdminClients, getClientInfo, ClientKey } from "./api"
 
 interface ClientContextValue {
   role: string
@@ -10,6 +10,7 @@ interface ClientContextValue {
   selectedClientId: string
   selectedClientName: string
   setSelectedClientId: (id: string) => void
+  username: string
 }
 
 const ClientContext = createContext<ClientContextValue>({
@@ -18,17 +19,21 @@ const ClientContext = createContext<ClientContextValue>({
   selectedClientId: "",
   selectedClientName: "",
   setSelectedClientId: () => {},
+  username: "",
 })
 
 export function ClientProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState("")
+  const [username, setUsername] = useState("")
   const [clients, setClients] = useState<ClientKey[]>([])
   const [selectedClientId, setSelectedClientId] = useState("")
+  const [clientName, setClientName] = useState("")
 
   useEffect(() => {
     const payload = decodeToken()
     if (!payload) return
     setRole(payload.role)
+    setUsername(payload.username)
 
     if (payload.role === "admin") {
       getAdminClients()
@@ -39,8 +44,13 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {})
     } else {
-      // client: fixed to their own client_id
+      // client: fixed to their own client_id, fetch their company name
       setSelectedClientId(payload.clientId ?? "")
+      if (payload.clientId) {
+        getClientInfo()
+          .then(({ client }) => setClientName(client.client_name))
+          .catch(() => {})
+      }
     }
   }, [])
 
@@ -50,10 +60,10 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   }
 
   const selected = clients.find(c => c.id === selectedClientId)
-  const selectedClientName = selected?.client_name ?? ""
+  const selectedClientName = selected?.client_name ?? clientName
 
   return (
-    <ClientContext.Provider value={{ role, clients, selectedClientId, selectedClientName, setSelectedClientId: handleSelect }}>
+    <ClientContext.Provider value={{ role, clients, selectedClientId, selectedClientName, setSelectedClientId: handleSelect, username }}>
       {children}
     </ClientContext.Provider>
   )

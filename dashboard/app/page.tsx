@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StatCard } from "@/components/StatCard"
-import { getStats, getJobs, getHealth, getAdminClientStats, DbStats, JobsData, HealthData } from "@/lib/api"
+import { getStats, getJobs, getHealth, getAdminClientStats, getClientStats, DbStats, JobsData, HealthData } from "@/lib/api"
 import { useClient } from "@/lib/clientContext"
 import { decodeToken } from "@/lib/auth"
 import {
@@ -66,12 +66,16 @@ export default function Dashboard() {
 
     try {
       const days = parseInt(preset)
-      const isAdmin = role === "admin" || decodeToken()?.role === "admin"
+      const effectiveRole = role || decodeToken()?.role
+      const isAdmin = effectiveRole === "admin"
+      const isClient = effectiveRole === "client"
 
       const [statsData, jobsData, healthData] = await Promise.allSettled([
         isAdmin && selectedClientId
           ? getAdminClientStats(selectedClientId, preset === "custom" ? 7 : days)
-          : getStats(preset === "custom" && customFrom && customTo ? { from: customFrom, to: customTo } : { days }),
+          : isClient && selectedClientId
+            ? getClientStats(preset === "custom" && customFrom && customTo ? { from: customFrom, to: customTo } : { days })
+            : getStats(preset === "custom" && customFrom && customTo ? { from: customFrom, to: customTo } : { days }),
         getJobs(),
         getHealth(),
       ])

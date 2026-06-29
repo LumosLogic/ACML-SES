@@ -23,6 +23,7 @@ export const config = {
   unsubscribeSecret: process.env.UNSUBSCRIBE_SECRET || 'change-this-in-production',
   jwtSecret: process.env.JWT_SECRET || 'change-this-jwt-secret',
   adminUsername: process.env.ADMIN_USERNAME || '',
+  adminEmail: process.env.ADMIN_EMAIL || '',
   adminPassword: process.env.ADMIN_PASSWORD || '',
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',

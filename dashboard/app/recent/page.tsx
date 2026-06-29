@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Mail } from "lucide-react"
-import { getRecentEmails, getAdminClientEmails } from "@/lib/api"
+import { getRecentEmails, getAdminClientEmails, getClientEmails } from "@/lib/api"
 import { useClient } from "@/lib/clientContext"
 import { decodeToken } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
@@ -119,11 +119,16 @@ export default function RecentEmailsPage() {
         params = { limit, days: parseInt(preset) }
       }
 
-      const isAdmin = role === "admin" || decodeToken()?.role === "admin"
+      const effectiveRole = role || decodeToken()?.role
+      const isAdmin = effectiveRole === "admin"
+      const isClient = effectiveRole === "client"
       let data: { emails: EmailLogEntry[] }
       if (isAdmin && selectedClientId) {
         const adminData = await getAdminClientEmails(selectedClientId, { limit })
         data = { emails: adminData.emails as EmailLogEntry[] }
+      } else if (isClient) {
+        const clientData = await getClientEmails({ limit })
+        data = { emails: clientData.emails as EmailLogEntry[] }
       } else {
         data = await getRecentEmails(params)
       }

@@ -114,6 +114,40 @@ export async function deleteAdminUser(id: string): Promise<void> {
   if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to delete user') }
 }
 
+// ── Client self-service API (JWT auth, scoped to own client_id) ──────────────
+
+export interface ClientInfo {
+  id: string
+  client_name: string
+  allowed_domain: string
+}
+
+export async function getClientInfo(): Promise<{ client: ClientInfo }> {
+  const res = await fetchAdmin('/client/info')
+  if (!res.ok) throw new Error('Failed to fetch client info')
+  return res.json()
+}
+
+export async function getClientStats(params: { days?: number; from?: string; to?: string }): Promise<DbStats> {
+  const query = params.from && params.to
+    ? `from=${params.from}&to=${params.to}`
+    : `days=${params.days ?? 7}`
+  const res = await fetchAdmin(`/client/stats?${query}`)
+  if (!res.ok) throw new Error('Failed to fetch client stats')
+  return res.json()
+}
+
+export async function getClientEmails(params: { limit?: number; offset?: number; search?: string } = {}): Promise<AdminClientEmails> {
+  const q = new URLSearchParams({
+    limit: String(params.limit ?? 100),
+    offset: String(params.offset ?? 0),
+    ...(params.search ? { search: params.search } : {}),
+  })
+  const res = await fetchAdmin(`/client/emails?${q}`)
+  if (!res.ok) throw new Error('Failed to fetch client emails')
+  return res.json()
+}
+
 export interface MetricsSummary {
   period_days: number
   summary: {
