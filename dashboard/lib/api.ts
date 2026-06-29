@@ -43,6 +43,8 @@ export interface AdminClientStats {
     delivery_rate: number; bounce_rate: number
   }
   timeseries: { date: string; sent: number; delivered: number; bounced: number; failed: number }[]
+  from?: string
+  to?: string
 }
 
 export interface AdminClientEmails {
