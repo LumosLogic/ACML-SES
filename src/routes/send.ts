@@ -7,19 +7,63 @@ import { logEmail } from '../services/emailLog';
 import { emailQueue } from '../services/queue';
 import { filterSuppressed } from '../services/suppression';
 import { applyTemplate, injectUnsubscribeLink } from '../services/unsubscribe';
+import { sanitizeEmailBody } from '../services/sanitize';
 import { config } from '../config';
 import type { BulkJobData } from '../types';
 
 const router = Router();
 
+// Allowed MIME types for attachments
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+]);
+
+// Magic byte signatures for real file type detection
+function detectMimeFromBytes(buf: Buffer): string | null {
+  if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'application/pdf';
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+  if (buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04) return 'application/zip'; // zip, docx, xlsx
+  if (buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0) return 'application/msword'; // doc, xls
+  return null;
+}
+
+// Sanitize filename — strip path traversal and dangerous characters
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\.\./g, '')
+    .trim()
+    .slice(0, 200) || 'attachment';
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB per file
+  fileFilter: (_req, file, cb) => {
+    if (file.fieldname === 'attachments' && !ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      cb(new Error(`File type not allowed: ${file.mimetype}`));
+      return;
+    }
+    cb(null, true);
+  },
 });
 
 const uploadFields = upload.fields([
   { name: 'csv', maxCount: 1 },
-  { name: 'attachments', maxCount: 10 },
+  { name: 'attachments', maxCount: 3 },
 ]);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,10 +110,13 @@ function parseCSVBuffer(buffer: Buffer): RecipientEntry[] {
     .filter(Boolean) as RecipientEntry[];
 }
 
-function senderAllowed(email: string): boolean {
+function senderAllowed(email: string, clientAllowedDomain: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase() ?? '';
+  // Per-client domain lock (set when key was created)
+  if (clientAllowedDomain) return domain === clientAllowedDomain;
+  // Fallback to env var for legacy keys with no domain set
   const { allowedFromDomains } = config.ses;
   if (allowedFromDomains.length === 0) return true;
-  const domain = email.split('@')[1]?.toLowerCase() ?? '';
   return allowedFromDomains.includes(domain);
 }
 
@@ -108,13 +155,17 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     const isHtml = req.body.isHtml !== 'false';
     const from = (req.body.from as string | undefined)?.trim() || config.ses.defaultFrom;
 
-    if (!subject || !body) {
-      res.status(400).json({ error: '"subject" and "body" are required' });
+    if (!subject) {
+      res.status(400).json({ error: '"subject" is required' });
+      return;
+    }
+    if (!body) {
+      res.status(400).json({ error: '"body" is required' });
       return;
     }
 
-    if (!senderAllowed(from)) {
-      res.status(400).json({ error: 'Sender domain is not allowed. Use a verified domain.' });
+    if (!senderAllowed(from, req.allowedDomain)) {
+      res.status(400).json({ error: `Sender domain is not allowed. Your key is restricted to: ${req.allowedDomain}` });
       return;
     }
 
@@ -183,6 +234,15 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       }
     }
 
+    // Deduplicate recipients — keep first occurrence of each email
+    const seenEmails = new Set<string>();
+    entries = entries.filter(e => {
+      const lower = e.email.toLowerCase();
+      if (seenEmails.has(lower)) return false;
+      seenEmails.add(lower);
+      return true;
+    });
+
     // Merge globalVars (per-recipient vars override global)
     entries = mergeGlobalVars(entries, globalVars);
 
@@ -210,6 +270,16 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       return;
     }
 
+    // Validate real file type via magic bytes and sanitize filenames
+    for (const f of attachmentFiles) {
+      const realMime = detectMimeFromBytes(f.buffer);
+      if (realMime && !ALLOWED_MIME_TYPES.has(realMime)) {
+        res.status(400).json({ error: `File "${f.originalname}" has a disallowed type based on its content.` });
+        return;
+      }
+      f.originalname = sanitizeFilename(f.originalname);
+    }
+
     const attachments = attachmentFiles.map(f => ({
       filename: f.originalname,
       content: f.buffer,
@@ -225,7 +295,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
         allowedEntries.map(({ email, vars }) => {
           const finalVars = { ...vars, email };
           const renderedSubject = applyTemplate(subject, finalVars);
-          const renderedBody = injectUnsubscribeLink(applyTemplate(body, finalVars), email, isHtml);
+          const renderedBody = injectUnsubscribeLink(sanitizeEmailBody(applyTemplate(body, finalVars), isHtml), email, isHtml);
 
           return sendEmail({
             to: email,
@@ -237,6 +307,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
             cc,
             bcc,
             attachments: attachments.length > 0 ? attachments : undefined,
+            smtpConfig: req.smtpConfig,
           }).then(async messageId => {
             await logEmail({
               id: randomUUID(),
@@ -246,6 +317,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
               sentAt: new Date().toISOString(),
               status: 'sent',
               jobId: 'direct',
+              clientId: req.clientId,
             });
             return { email, status: 'sent' as const, messageId };
           });
@@ -281,6 +353,8 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
         bcc,
         isHtml,
         callbackUrl: callback_url,
+        clientId: req.clientId,
+        smtpConfig: req.smtpConfig,
       };
 
       if (attachments.length > 0) {

@@ -1,21 +1,28 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config';
+import type { SmtpConfig } from '../types';
 
-let transporter: nodemailer.Transporter | null = null;
+// Cache one transporter per client SMTP config
+const transporterCache = new Map<string, nodemailer.Transporter>();
 
-function getTransporter(): nodemailer.Transporter {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: config.smtp.secure,
-      auth: {
-        user: config.smtp.user,
-        pass: config.smtp.pass,
-      },
-    });
+function getTransporter(smtpConfig?: SmtpConfig): nodemailer.Transporter {
+  const host = smtpConfig?.host ?? config.smtp.host;
+  const port = smtpConfig?.port ?? config.smtp.port;
+  const user = smtpConfig?.user ?? config.smtp.user;
+  const pass = smtpConfig?.pass ?? config.smtp.pass;
+
+  const cacheKey = `${host}:${port}:${user}`;
+
+  if (!transporterCache.has(cacheKey)) {
+    transporterCache.set(cacheKey, nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    }));
   }
-  return transporter;
+
+  return transporterCache.get(cacheKey)!;
 }
 
 export async function sendEmail(params: {
@@ -28,8 +35,11 @@ export async function sendEmail(params: {
   cc?: string;
   bcc?: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
+  smtpConfig?: SmtpConfig;
 }): Promise<string> {
-  const transport = getTransporter();
+  const transport = getTransporter(params.smtpConfig);
+  const configSet = params.smtpConfig?.configSet ?? config.ses.configSet;
+
   const info = await transport.sendMail({
     from: params.from,
     to: params.to,
@@ -44,18 +54,17 @@ export async function sendEmail(params: {
       contentType: a.contentType,
     })),
     headers: {
-      'X-SES-CONFIGURATION-SET': config.ses.configSet,
+      'X-SES-CONFIGURATION-SET': configSet,
     },
   });
-  // SES SMTP response looks like: "250 Ok 0109019ecf4e7bd4-xxx-000000"
-  // SNS events use this same ID, so extract it from the response
+
   const match = (info.response || '').match(/Ok\s+(\S+)/);
   return match ? match[1] : (info.messageId || '').replace(/[<>]/g, '').split('@')[0];
 }
 
-export async function verifyConnection(): Promise<boolean> {
+export async function verifyConnection(smtpConfig?: SmtpConfig): Promise<boolean> {
   try {
-    await getTransporter().verify();
+    await getTransporter(smtpConfig).verify();
     return true;
   } catch {
     return false;

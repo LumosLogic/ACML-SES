@@ -5,13 +5,14 @@ import { sendEmail } from '../services/mailer';
 import { logEmail } from '../services/emailLog';
 import { isEmailSuppressed } from '../services/suppression';
 import { applyTemplate, injectUnsubscribeLink } from '../services/unsubscribe';
+import { sanitizeEmailBody } from '../services/sanitize';
 import { config } from '../config';
 import type { BulkJobData, JobProgress } from '../types';
 
 const EMAIL_DELAY_MS = Math.ceil(1000 / config.ses.sendRate);
 
 async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
-  const { recipients, recipientVars, subject, body, from, replyTo, cc, bcc, isHtml, attachments: rawAttachments, callbackUrl } = job.data;
+  const { recipients, recipientVars, subject, body, from, replyTo, cc, bcc, isHtml, attachments: rawAttachments, callbackUrl, clientId, smtpConfig } = job.data;
 
   const progress: JobProgress = { sent: 0, failed: 0, total: recipients.length, failedEmails: [] };
   await job.updateProgress({ ...progress });
@@ -38,7 +39,7 @@ async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
     // Apply per-recipient vars + unsubscribe link
     const vars = { ...(recipientVars?.[i] ?? {}), email };
     const renderedSubject = applyTemplate(subject, vars);
-    const renderedBody = injectUnsubscribeLink(applyTemplate(body, vars), email, isHtml);
+    const renderedBody = injectUnsubscribeLink(sanitizeEmailBody(applyTemplate(body, vars), isHtml), email, isHtml);
 
     try {
       const messageId = await sendEmail({
@@ -51,6 +52,7 @@ async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
         cc,
         bcc,
         attachments,
+        smtpConfig,
       });
 
       progress.sent++;
@@ -62,6 +64,7 @@ async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
         sentAt: new Date().toISOString(),
         status: 'sent',
         jobId: job.id ?? '',
+        clientId,
       });
     } catch (err) {
       progress.failed++;
@@ -75,6 +78,7 @@ async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
         sentAt: new Date().toISOString(),
         status: 'failed',
         jobId: job.id ?? '',
+        clientId,
       });
     }
 

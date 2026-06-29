@@ -51,10 +51,10 @@ async function verifySNSSignature(body: Record<string, string>): Promise<boolean
 }
 
 // SNS sends Content-Type: text/plain
-router.use('/webhooks/ses', text({ type: '*/*' }));
+router.use('/ses', text({ type: '*/*' }));
 
 // POST /api/webhooks/ses
-router.post('/webhooks/ses', async (req: Request, res: Response) => {
+router.post('/ses', async (req: Request, res: Response) => {
   try {
     const body: Record<string, string> =
       typeof req.body === 'string' ? JSON.parse(req.body) : req.body;

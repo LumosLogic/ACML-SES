@@ -218,7 +218,7 @@ router.get('/recent-emails', async (req: Request, res: Response, next: NextFunct
       to = new Date();
     }
 
-    const emails = await getRecentEmails(limit, from, to);
+    const emails = await getRecentEmails(req.clientId, limit, from, to);
     res.json({ emails });
   } catch (err) {
     next(err);

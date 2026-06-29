@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ACML Email Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+button{cursor:pointer;border:none;outline:none}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-card{background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:40px;width:380px}
+.login-card h2{font-size:22px;font-weight:700;margin-bottom:4px;color:#fff}
+.login-card p{color:#8892a4;font-size:13px;margin-bottom:28px}
+.form-label{display:block;font-size:12px;color:#8892a4;margin-bottom:5px}
+.form-input{width:100%;background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:14px;margin-bottom:14px}
+.form-input:focus{outline:none;border-color:#6366f1}
+.btn-primary{width:100%;background:#6366f1;color:#fff;padding:11px;border-radius:8px;font-size:14px;font-weight:600;transition:background .2s}
+.btn-primary:hover{background:#4f52d9}
+.error-msg{color:#f87171;font-size:12px;margin-top:8px;text-align:center}
+
+/* LAYOUT */
+#app{display:none;height:100vh;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr}
+#app.visible{display:grid}
+
+/* HEADER */
+header{grid-column:1/-1;background:#1a1d27;border-bottom:1px solid #2d3148;display:flex;align-items:center;padding:0 20px;gap:14px}
+.logo{font-weight:700;font-size:16px;color:#fff;white-space:nowrap;margin-right:4px}
+.logo span{color:#6366f1}
+header select{background:#0f1117;border:1px solid #2d3148;color:#e2e8f0;padding:6px 12px;border-radius:8px;font-size:13px;max-width:260px}
+header select:focus{outline:none;border-color:#6366f1}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.user-pill{display:flex;align-items:center;gap:8px;background:#1e2235;border:1px solid #2d3148;border-radius:20px;padding:4px 12px}
+.user-pill .name{font-size:13px;color:#e2e8f0;font-weight:500}
+.user-pill .role-tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px}
+.role-tag.admin{background:#6366f120;color:#818cf8}
+.role-tag.client{background:#34d39920;color:#34d399}
+.btn-logout{background:transparent;color:#64748b;font-size:13px;padding:4px 8px;border-radius:6px}
+.btn-logout:hover{color:#f87171}
+
+/* SIDEBAR */
+aside{background:#1a1d27;border-right:1px solid #2d3148;padding:16px 0;overflow-y:auto}
+.nav-section-label{padding:16px 20px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#4a5568}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:#8892a4;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{color:#e2e8f0;background:#ffffff08}
+.nav-item.active{color:#818cf8;background:#6366f115;border-left-color:#6366f1}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+
+/* MAIN */
+main{overflow-y:auto;padding:24px;background:#0f1117}
+.section{display:none}
+.section.active{display:block}
+.page-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:20px}
+.page-title span{color:#8892a4;font-size:14px;font-weight:400;margin-left:8px}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:#1a1d27;border:1px solid #2d3148;border-radius:10px;padding:18px}
+.stat-card .lbl{font-size:12px;color:#8892a4;margin-bottom:6px}
+.stat-card .val{font-size:28px;font-weight:700;color:#fff}
+.stat-card .sub{font-size:12px;color:#8892a4;margin-top:3px}
+.stat-card.green .val{color:#34d399}
+.stat-card.red .val{color:#f87171}
+.stat-card.yellow .val{color:#fbbf24}
+
+/* CHART */
+.chart-card{background:#1a1d27;border:1px solid #2d3148;border-radius:10px;padding:20px;margin-bottom:24px}
+.chart-card h3{font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:16px}
+.chart-wrap{height:220px;position:relative}
+
+/* TABLE CARD */
+.table-card{background:#1a1d27;border:1px solid #2d3148;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #2d3148;flex-wrap:wrap;gap:10px}
+.table-header h3{font-size:14px;font-weight:600;color:#e2e8f0}
+.table-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-input{background:#0f1117;border:1px solid #2d3148;color:#e2e8f0;padding:6px 12px;border-radius:8px;font-size:13px;width:200px}
+.search-input:focus{outline:none;border-color:#6366f1}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;border-bottom:1px solid #2d3148;font-weight:500;white-space:nowrap}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid #1e2235;color:#cbd5e1;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#ffffff03}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge.sent,.badge.active{background:#34d39920;color:#34d399}
+.badge.failed,.badge.revoked{background:#f8717120;color:#f87171}
+.badge.delivered{background:#818cf820;color:#818cf8}
+.badge.bounced{background:#fbbf2420;color:#fbbf24}
+.badge.admin-role{background:#6366f120;color:#818cf8}
+.badge.client-role{background:#34d39920;color:#34d399}
+
+/* BUTTONS */
+.btn-sm{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500}
+.btn-danger{background:#f8717120;color:#f87171}
+.btn-danger:hover{background:#f8717135}
+.btn-success{background:#34d39920;color:#34d399}
+.btn-success:hover{background:#34d39935}
+.btn-purple{background:#6366f120;color:#818cf8}
+.btn-purple:hover{background:#6366f135}
+.btn-new{background:#6366f1;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500}
+.btn-new:hover{background:#4f52d9}
+
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid #2d3148}
+.pagination span{font-size:12px;color:#8892a4}
+.pg-btns{display:flex;gap:6px}
+.pg-btns button{background:#1e2235;color:#94a3b8;padding:5px 12px;border-radius:6px;font-size:12px;border:1px solid #2d3148}
+.pg-btns button:hover:not(:disabled){background:#2d3148;color:#fff}
+.pg-btns button:disabled{opacity:.4;cursor:not-allowed}
+
+/* FILTER */
+.filter-bar{display:flex;gap:8px;margin-bottom:20px}
+.fbtn{background:#1a1d27;border:1px solid #2d3148;color:#8892a4;padding:6px 14px;border-radius:20px;font-size:12px}
+.fbtn.active{background:#6366f120;border-color:#6366f1;color:#818cf8}
+.fbtn:hover:not(.active){color:#e2e8f0}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:#00000085;z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:28px;width:460px;max-width:95vw}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:20px;color:#fff}
+.modal-group{margin-bottom:14px}
+.modal-group label{display:block;font-size:12px;color:#8892a4;margin-bottom:5px}
+.modal-group input,.modal-group select{width:100%;background:#0f1117;border:1px solid #2d3148;color:#e2e8f0;padding:9px 12px;border-radius:8px;font-size:13px}
+.modal-group input:focus,.modal-group select:focus{outline:none;border-color:#6366f1}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn-cancel{background:#1e2235;color:#94a3b8;padding:8px 18px;border-radius:8px;font-size:13px;border:1px solid #2d3148}
+.key-display{background:#0f1117;border:1px solid #34d39940;border-radius:8px;padding:12px;margin-top:14px;word-break:break-all;font-family:monospace;font-size:12px;color:#34d399}
+.key-note{font-size:12px;color:#fbbf24;margin-top:6px}
+
+/* MISC */
+.empty{text-align:center;padding:48px 20px;color:#4a5568}
+.empty p{font-size:14px;margin-top:8px}
+.loading{text-align:center;padding:40px;color:#4a5568;font-size:13px}
+code{font-size:12px;color:#818cf8;font-family:monospace}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>ACML Email</h2>
+    <p>Sign in to your account</p>
+    <label class="form-label">Username</label>
+    <input class="form-input" type="text" id="inp-username" placeholder="Enter username" autocomplete="username"
+      onkeydown="if(event.key==='Enter')document.getElementById('inp-password').focus()"/>
+    <label class="form-label">Password</label>
+    <input class="form-input" type="password" id="inp-password" placeholder="Enter password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo">ACML <span>Email</span></div>
+    <select id="company-select" onchange="onCompanyChange()" style="display:none">
+      <option value="">All Companies</option>
+    </select>
+    <div class="header-right">
+      <div class="user-pill">
+        <span class="name" id="header-username"></span>
+        <span class="role-tag" id="header-role-tag"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">✕ Logout</button>
+    </div>
+  </header>
+
+  <aside>
+    <div class="nav-section-label">Navigation</div>
+    <div class="nav-item active" onclick="showSection('dashboard')" id="nav-dashboard">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showSection('emails')" id="nav-emails">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      Email Logs
+    </div>
+    <div class="nav-section-label admin-only">Management</div>
+    <div class="nav-item admin-only" onclick="showSection('clients')" id="nav-clients">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      Clients
+    </div>
+    <div class="nav-item admin-only" onclick="showSection('users')" id="nav-users">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      Users
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="page-title" id="dash-title">Dashboard</div>
+      <div class="filter-bar">
+        <button class="fbtn active" onclick="setDays(7,this)">7 Days</button>
+        <button class="fbtn" onclick="setDays(30,this)">30 Days</button>
+        <button class="fbtn" onclick="setDays(90,this)">3 Months</button>
+      </div>
+      <div id="dash-content"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- EMAIL LOGS -->
+    <div class="section" id="section-emails">
+      <div class="page-title" id="emails-title">Email Logs</div>
+      <div id="emails-content"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- CLIENTS (admin only) -->
+    <div class="section" id="section-clients">
+      <div class="page-title">Clients</div>
+      <div class="table-card">
+        <div class="table-header">
+          <h3>All Clients</h3>
+          <button class="btn-new" onclick="openModal('client')">+ New Client</button>
+        </div>
+        <table>
+          <thead><tr><th>Company</th><th>Domain</th><th>API Key</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="clients-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS (admin only) -->
+    <div class="section" id="section-users">
+      <div class="page-title">Users</div>
+      <div class="table-card">
+        <div class="table-header">
+          <h3>All Users</h3>
+          <button class="btn-new" onclick="openModal('user')">+ New User</button>
+        </div>
+        <table>
+          <thead><tr><th>Username</th><th>Role</th><th>Company</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- CREATE CLIENT MODAL -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <h3>Add New Client</h3>
+    <div class="modal-group"><label>Company Name</label><input type="text" id="c-name" placeholder="e.g. Company 1"/></div>
+    <div class="modal-group"><label>Sender Domain</label><input type="text" id="c-domain" placeholder="e.g. mail.company1.com"/></div>
+    <div id="c-key-result" style="display:none">
+      <div class="key-display" id="c-key-val"></div>
+      <div class="key-note">⚠ Save this API key — it will not be shown again.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('client')">Close</button>
+      <button class="btn-primary" style="width:auto;padding:8px 20px" id="c-create-btn" onclick="createClient()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE USER MODAL -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <h3>Add New User</h3>
+    <div class="modal-group"><label>Username</label><input type="text" id="u-username" placeholder="e.g. john"/></div>
+    <div class="modal-group"><label>Password (min 8 chars)</label><input type="password" id="u-password" placeholder="Set a password"/></div>
+    <div class="modal-group">
+      <label>Role</label>
+      <select id="u-role" onchange="toggleClientSelect()">
+        <option value="client">Client</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-group" id="u-client-group">
+      <label>Assign to Company</label>
+      <select id="u-client-id"><option value="">Select company...</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('user')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:8px 20px" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal">
+    <h3>Reset Password</h3>
+    <div class="modal-group"><label>New Password (min 8 chars)</label><input type="password" id="r-password" placeholder="New password"/></div>
+    <input type="hidden" id="r-user-id"/>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('reset')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:8px 20px" onclick="resetPassword()">Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let token     = sessionStorage.getItem('acml_token') || '';
+let currentUser = JSON.parse(sessionStorage.getItem('acml_user') || 'null');
+let clients   = [];
+let selectedClientId   = null;
+let selectedClientName = null;
+let currentDays = 7;
+let emailOffset = 0, emailTotal = 0, emailLimit = 50, emailSearch = '';
+let chartInst = null;
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('inp-username').value.trim();
+  const password = document.getElementById('inp-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Enter username and password'; return; }
+
+  const res = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) { errEl.textContent = data.error || 'Login failed'; return; }
+
+  token = data.token;
+  currentUser = data;
+  sessionStorage.setItem('acml_token', token);
+  sessionStorage.setItem('acml_user', JSON.stringify(data));
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  await boot();
+}
+
+function logout() {
+  sessionStorage.clear();
+  location.reload();
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function api(path, options = {}) {
+  const res = await fetch(path, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  return api(path, { method: 'POST', body: JSON.stringify(body) });
+}
+
+async function apiPatch(path, body = {}) {
+  return api(path, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+async function apiDelete(path) {
+  return api(path, { method: 'DELETE' });
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  const u = currentUser;
+
+  // Header
+  document.getElementById('header-username').textContent = u.username;
+  const roleTag = document.getElementById('header-role-tag');
+  roleTag.textContent = u.role;
+  roleTag.className = `role-tag ${u.role}`;
+
+  // Show/hide admin-only nav items
+  const isAdmin = u.role === 'admin';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+
+  // Company dropdown (admin only)
+  const sel = document.getElementById('company-select');
+  if (isAdmin) {
+    sel.style.display = '';
+    await loadClients();
+  } else {
+    // Client: auto-select their company
+    selectedClientId   = u.clientId;
+    selectedClientName = u.clientName;
+  }
+
+  showSection('dashboard');
+}
+
+// ─── CLIENTS ──────────────────────────────────────────────────────────────────
+async function loadClients() {
+  const data = await api('/admin/keys');
+  if (!data) return;
+  clients = data.keys;
+
+  const sel = document.getElementById('company-select');
+  const saved = selectedClientId;
+  sel.innerHTML = '<option value="">All Companies</option>';
+  clients.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.client_name + (c.is_active ? '' : ' (revoked)');
+    sel.appendChild(o);
+  });
+  if (saved) sel.value = saved;
+
+  // Populate company select in user modal
+  const uc = document.getElementById('u-client-id');
+  uc.innerHTML = '<option value="">Select company...</option>';
+  clients.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.client_name; uc.appendChild(o); });
+
+  renderClients();
+}
+
+function renderClients() {
+  const tb = document.getElementById('clients-tbody');
+  if (!clients.length) { tb.innerHTML = `<tr><td colspan="6"><div class="empty"><p>No clients yet</p></div></td></tr>`; return; }
+  tb.innerHTML = clients.map(c => `
+    <tr>
+      <td><strong style="color:#fff">${esc(c.client_name)}</strong></td>
+      <td><code>${esc(c.allowed_domain||'—')}</code></td>
+      <td><code style="color:#64748b">${esc(c.key_preview)}</code></td>
+      <td><span class="badge ${c.is_active?'active':'revoked'}">${c.is_active?'Active':'Revoked'}</span></td>
+      <td style="color:#64748b">${new Date(c.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px">
+        ${c.is_active
+          ? `<button class="btn-sm btn-danger" onclick="revokeKey('${c.id}')">Revoke</button>`
+          : `<button class="btn-sm btn-success" onclick="activateKey('${c.id}')">Activate</button>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function revokeKey(id) {
+  if (!confirm('Revoke this key? Client loses access immediately.')) return;
+  await apiPatch(`/admin/keys/${id}/revoke`);
+  await loadClients();
+}
+
+async function activateKey(id) {
+  await apiPatch(`/admin/keys/${id}/activate`);
+  await loadClients();
+}
+
+// ─── USERS ────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const data = await api('/admin/users');
+  if (!data) return;
+  const tb = document.getElementById('users-tbody');
+  if (!data.users.length) { tb.innerHTML = `<tr><td colspan="5"><div class="empty"><p>No users yet</p></div></td></tr>`; return; }
+  tb.innerHTML = data.users.map(u => `
+    <tr>
+      <td><strong style="color:#fff">${esc(u.username)}</strong></td>
+      <td><span class="badge ${u.role}-role">${u.role}</span></td>
+      <td>${u.client_name ? `<code>${esc(u.client_name)}</code>` : '<span style="color:#4a5568">—</span>'}</td>
+      <td style="color:#64748b">${new Date(u.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-sm btn-purple" onclick="openResetModal('${u.id}')">Reset PW</button>
+        <button class="btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+  await apiDelete(`/admin/users/${id}`);
+  loadUsers();
+}
+
+function openResetModal(id) {
+  document.getElementById('r-user-id').value = id;
+  document.getElementById('r-password').value = '';
+  openModal('reset');
+}
+
+async function resetPassword() {
+  const id  = document.getElementById('r-user-id').value;
+  const pw  = document.getElementById('r-password').value;
+  const res = await apiPatch(`/admin/users/${id}/password`, { password: pw });
+  if (res?.error) { alert(res.error); return; }
+  closeModal('reset');
+  alert('Password updated.');
+}
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function openModal(name) {
+  if (name === 'client') {
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-domain').value = '';
+    document.getElementById('c-key-result').style.display = 'none';
+    document.getElementById('c-create-btn').style.display = '';
+  }
+  if (name === 'user') {
+    document.getElementById('u-username').value = '';
+    document.getElementById('u-password').value = '';
+    document.getElementById('u-role').value = 'client';
+    toggleClientSelect();
+  }
+  document.getElementById(`modal-${name}`).classList.add('open');
+}
+
+function closeModal(name) {
+  document.getElementById(`modal-${name}`).classList.remove('open');
+  if (name === 'client') loadClients();
+  if (name === 'user') loadUsers();
+}
+
+function toggleClientSelect() {
+  const role = document.getElementById('u-role').value;
+  document.getElementById('u-client-group').style.display = role === 'client' ? '' : 'none';
+}
+
+async function createClient() {
+  const name   = document.getElementById('c-name').value.trim();
+  const domain = document.getElementById('c-domain').value.trim();
+  if (!name || !domain) { alert('Both fields are required'); return; }
+  const data = await apiPost('/admin/keys', { client_name: name, allowed_domain: domain });
+  if (data?.api_key) {
+    document.getElementById('c-key-val').textContent = data.api_key;
+    document.getElementById('c-key-result').style.display = 'block';
+    document.getElementById('c-create-btn').style.display = 'none';
+  } else { alert(data?.error || 'Failed'); }
+}
+
+async function createUser() {
+  const username  = document.getElementById('u-username').value.trim();
+  const password  = document.getElementById('u-password').value;
+  const role      = document.getElementById('u-role').value;
+  const client_id = document.getElementById('u-client-id').value || null;
+  const data = await apiPost('/admin/users', { username, password, role, client_id });
+  if (data?.user) { closeModal('user'); }
+  else { alert(data?.error || 'Failed to create user'); }
+}
+
+// ─── COMPANY SELECT ───────────────────────────────────────────────────────────
+function onCompanyChange() {
+  const sel = document.getElementById('company-select');
+  selectedClientId = sel.value || null;
+  const c = clients.find(x => x.id === selectedClientId);
+  selectedClientName = c ? c.client_name : null;
+  emailOffset = 0; emailSearch = '';
+  const active = document.querySelector('.section.active')?.id?.replace('section-','');
+  if (active === 'dashboard') loadDashboard();
+  else if (active === 'emails') loadEmails();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  const navEl = document.getElementById(`nav-${name}`);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  else if (name === 'emails') { emailOffset = 0; loadEmails(); }
+  else if (name === 'clients') loadClients();
+  else if (name === 'users') loadUsers();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function setDays(d, btn) {
+  currentDays = d;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadDashboard();
+}
+
+async function loadDashboard() {
+  const cid = selectedClientId;
+  const cname = selectedClientName;
+  const titleEl = document.getElementById('dash-title');
+  const content = document.getElementById('dash-content');
+
+  if (!cid && currentUser.role === 'admin') {
+    titleEl.innerHTML = 'Dashboard <span>Select a company from the dropdown</span>';
+    content.innerHTML = `<div class="empty"><p>Select a company to view their stats</p></div>`;
+    return;
+  }
+
+  const id = cid || currentUser.clientId;
+  const label = cname || currentUser.clientName || 'My Company';
+  titleEl.innerHTML = `Dashboard <span>${esc(label)}</span>`;
+  content.innerHTML = `<div class="loading">Loading stats...</div>`;
+
+  const data = await api(`/admin/clients/${id}/stats?days=${currentDays}`);
+  if (!data) return;
+  const s = data.summary;
+
+  content.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="lbl">Total Sent</div><div class="val">${fmt(s.sent)}</div></div>
+      <div class="stat-card green"><div class="lbl">Delivered</div><div class="val">${fmt(s.delivered)}</div><div class="sub">${s.delivery_rate}% rate</div></div>
+      <div class="stat-card red"><div class="lbl">Bounced</div><div class="val">${fmt(s.bounced)}</div><div class="sub">${s.bounce_rate}% rate</div></div>
+      <div class="stat-card yellow"><div class="lbl">Failed</div><div class="val">${fmt(s.failed)}</div></div>
+    </div>
+    <div class="chart-card">
+      <h3>Daily Email Activity</h3>
+      <div class="chart-wrap"><canvas id="stats-chart"></canvas></div>
+    </div>`;
+
+  if (chartInst) chartInst.destroy();
+  chartInst = new Chart(document.getElementById('stats-chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: data.timeseries.map(r => r.date),
+      datasets: [
+        { label: 'Sent',      data: data.timeseries.map(r => r.sent),      backgroundColor: '#6366f170', borderRadius: 4 },
+        { label: 'Delivered', data: data.timeseries.map(r => r.delivered), backgroundColor: '#34d39970', borderRadius: 4 },
+        { label: 'Bounced',   data: data.timeseries.map(r => r.bounced),   backgroundColor: '#f8717170', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8892a4', font: { size: 12 } } } },
+      scales: {
+        x: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#ffffff08' } },
+        y: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#ffffff10' } },
+      }
+    }
+  });
+}
+
+// ─── EMAILS ───────────────────────────────────────────────────────────────────
+async function loadEmails() {
+  const cid = selectedClientId || currentUser.clientId;
+  const cname = selectedClientName || currentUser.clientName || 'My Company';
+  const titleEl = document.getElementById('emails-title');
+  const content = document.getElementById('emails-content');
+
+  if (!cid) {
+    titleEl.innerHTML = 'Email Logs <span>Select a company from the dropdown</span>';
+    content.innerHTML = `<div class="empty"><p>Select a company to view their emails</p></div>`;
+    return;
+  }
+
+  titleEl.innerHTML = `Email Logs <span>${esc(cname)}</span>`;
+  content.innerHTML = `<div class="loading">Loading emails...</div>`;
+
+  const sp = emailSearch ? `&search=${encodeURIComponent(emailSearch)}` : '';
+  const data = await api(`/admin/clients/${cid}/emails?limit=${emailLimit}&offset=${emailOffset}${sp}`);
+  if (!data) return;
+
+  emailTotal = data.total;
+  const from = emailOffset + 1;
+  const to   = Math.min(emailOffset + emailLimit, emailTotal);
+
+  content.innerHTML = `
+    <div class="table-card">
+      <div class="table-header">
+        <h3>Inbox</h3>
+        <div class="table-actions">
+          <input class="search-input" type="text" placeholder="Search recipient or subject…" value="${esc(emailSearch)}"
+            oninput="emailSearch=this.value" onkeydown="if(event.key==='Enter'){emailOffset=0;loadEmails()}"/>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Recipient</th><th>Subject</th><th>Status</th><th>Delivered</th><th>Bounced</th><th>Sent At</th></tr></thead>
+        <tbody>
+          ${!data.emails.length
+            ? `<tr><td colspan="6"><div class="empty"><p>No emails found</p></div></td></tr>`
+            : data.emails.map(e => `
+              <tr>
+                <td>${esc(e.recipient)}</td>
+                <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">${esc(e.subject)}</td>
+                <td><span class="badge ${e.status}">${e.status}</span></td>
+                <td>${e.delivered ? '<span class="badge delivered">Yes</span>' : '<span style="color:#374151">—</span>'}</td>
+                <td>${e.bounced  ? '<span class="badge bounced">Yes</span>'  : '<span style="color:#374151">—</span>'}</td>
+                <td style="color:#64748b;white-space:nowrap">${new Date(e.sentAt).toLocaleString()}</td>
+              </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span>Showing ${emailTotal===0?0:from}–${to} of ${emailTotal}</span>
+        <div class="pg-btns">
+          <button onclick="prevPage()" ${emailOffset===0?'disabled':''}>← Prev</button>
+          <button onclick="nextPage()" ${to>=emailTotal?'disabled':''}>Next →</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function prevPage() { emailOffset = Math.max(0, emailOffset - emailLimit); loadEmails(); }
+function nextPage() { emailOffset += emailLimit; loadEmails(); }
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(n) { return Number(n||0).toLocaleString(); }
+
+// ─── AUTO LOGIN ───────────────────────────────────────────────────────────────
+if (token && currentUser) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  boot();
+}
+</script>
+</body>
+</html>

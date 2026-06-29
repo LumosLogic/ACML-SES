@@ -1,10 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import path from 'path';
 import { config } from './config';
 import { initDb } from './services/db';
-import { requireApiKey, requireAdminKey } from './middleware/auth';
-import { rateLimiter } from './middleware/rateLimiter';
+import { requireApiKey } from './middleware/auth';
+import { requireAuth, requireAdminRole } from './middleware/jwt';
+import { rateLimiter, dashboardLimiter } from './middleware/rateLimiter';
 import sendRoutes from './routes/send';
+import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/admin';
 import unsubscribeRoutes from './routes/unsubscribe';
 import suppressionRoutes from './routes/suppressions';
@@ -18,7 +22,24 @@ import { startEmailWorker } from './workers/emailWorker';
 
 const app = express();
 
-app.use(cors());
+// Security headers (XSS, clickjacking, sniffing, etc.)
+app.use(helmet());
+
+// Restrict CORS to allowed origins only
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
+app.use(cors({
+  origin: allowedOrigins.length > 0
+    ? (origin, cb) => {
+        if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+        else cb(new Error('CORS: origin not allowed'));
+      }
+    : false,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'X-Api-Key', 'Authorization'],
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -26,23 +47,46 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve admin panel HTML
+app.get('/panel', (_req, res) => res.sendFile(path.join(__dirname, '../public/panel.html')));
+
 // Public routes — no auth needed
-app.use('/api/webhooks', webhookRoutes);  // SNS signature verified inside
+app.use('/webhooks', webhookRoutes);      // SNS signature verified inside
 app.use('/', unsubscribeRoutes);          // /unsubscribe?email=&token=
 app.use('/docs', docsRoutes);             // Swagger UI
 
-// Admin routes — protected by separate ADMIN_KEY
-app.use('/admin', requireAdminKey, adminRoutes);
+// Auth routes — public
+app.use('/auth', authRoutes);
 
-// All other API routes — rate limited + per-client API key required
+// Admin routes — JWT + admin role required
+app.use('/admin', requireAuth, requireAdminRole, adminRoutes);
+
+// Send routes — strict rate limit (multipart + JSON)
 app.use('/api', rateLimiter, requireApiKey, sendRoutes);
+// Suppression management — strict rate limit
 app.use('/api', rateLimiter, requireApiKey, suppressionRoutes);
-app.use('/api', rateLimiter, requireApiKey, emailRoutes);
-app.use('/api', rateLimiter, requireApiKey, jobRoutes);
-app.use('/api', rateLimiter, requireApiKey, metricsRoutes);
-app.use('/api', rateLimiter, requireApiKey, statsRoutes);
+// Dashboard read-only routes — relaxed rate limit
+app.use('/api', dashboardLimiter, requireApiKey, emailRoutes);
+app.use('/api', dashboardLimiter, requireApiKey, jobRoutes);
+app.use('/api', dashboardLimiter, requireApiKey, metricsRoutes);
+app.use('/api', dashboardLimiter, requireApiKey, statsRoutes);
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error & { code?: string }, _req: Request, res: Response, _next: NextFunction) => {
+  // Multer file size exceeded
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    res.status(400).json({ error: 'File too large. Maximum allowed size is 2MB per file.' });
+    return;
+  }
+  // Multer too many files
+  if (err.code === 'LIMIT_UNEXPECTED_FILE' || err.code === 'LIMIT_FILE_COUNT') {
+    res.status(400).json({ error: 'Too many files. Maximum allowed is 3 attachments per email.' });
+    return;
+  }
+  // Multer file type rejected
+  if (err.message?.startsWith('File type not allowed')) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
   console.error('[error]', err.message);
   res.status(500).json({ error: 'Internal server error' });
 });

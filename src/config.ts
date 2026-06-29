@@ -21,12 +21,16 @@ export const config = {
   bulkThreshold: parseInt(process.env.BULK_THRESHOLD || '50'),
   unsubscribeBaseUrl: process.env.UNSUBSCRIBE_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
   unsubscribeSecret: process.env.UNSUBSCRIBE_SECRET || 'change-this-in-production',
+  jwtSecret: process.env.JWT_SECRET || 'change-this-jwt-secret',
+  adminUsername: process.env.ADMIN_USERNAME || '',
+  adminPassword: process.env.ADMIN_PASSWORD || '',
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
   databaseUrl: process.env.DATABASE_URL || 'postgresql://recruitx:recruitx123@localhost:5432/recruitx',
   apiKey: process.env.API_KEY || '',          // legacy fallback
   adminKey: process.env.ADMIN_KEY || '',
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean),
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',

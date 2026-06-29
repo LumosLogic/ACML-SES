@@ -4,6 +4,15 @@ import { config } from '../config';
 export const pool = new Pool({ connectionString: config.databaseUrl });
 
 export async function initDb(): Promise<void> {
+  // Run column migrations FIRST so indexes on new columns don't fail
+  await pool.query(`ALTER TABLE email_logs ADD COLUMN IF NOT EXISTS client_id UUID`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS allowed_domain TEXT NOT NULL DEFAULT ''`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_host TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_port INTEGER`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_user TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS smtp_pass TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE api_keys   ADD COLUMN IF NOT EXISTS ses_config_set TEXT`).catch(() => {});
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS email_logs (
       id           UUID PRIMARY KEY,
@@ -15,10 +24,12 @@ export async function initDb(): Promise<void> {
       job_id       TEXT,
       delivered    BOOLEAN NOT NULL DEFAULT FALSE,
       opened       BOOLEAN NOT NULL DEFAULT FALSE,
-      bounced      BOOLEAN NOT NULL DEFAULT FALSE
+      bounced      BOOLEAN NOT NULL DEFAULT FALSE,
+      client_id    UUID
     );
     CREATE INDEX IF NOT EXISTS idx_email_logs_message_id ON email_logs (message_id);
-    CREATE INDEX IF NOT EXISTS idx_email_logs_sent_at ON email_logs (sent_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_email_logs_sent_at    ON email_logs (sent_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_email_logs_client_id  ON email_logs (client_id);
 
     CREATE TABLE IF NOT EXISTS suppressed_emails (
       email          TEXT PRIMARY KEY,
@@ -27,22 +38,52 @@ export async function initDb(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS api_keys (
-      id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      key          TEXT UNIQUE NOT NULL,
-      client_name  TEXT NOT NULL,
-      is_active    BOOLEAN NOT NULL DEFAULT TRUE,
-      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      key            TEXT UNIQUE NOT NULL,
+      client_name    TEXT NOT NULL,
+      allowed_domain TEXT NOT NULL DEFAULT '',
+      smtp_host      TEXT,
+      smtp_port      INTEGER,
+      smtp_user      TEXT,
+      smtp_pass      TEXT,
+      ses_config_set TEXT,
+      is_active      BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys (key);
+
+    CREATE TABLE IF NOT EXISTS users (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      username      TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role          TEXT NOT NULL DEFAULT 'client',
+      client_id     UUID,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
   `);
 
-  // Auto-migrate: if table is empty and legacy API_KEY is set, seed it as "default" client
+  // Bootstrap admin user from env vars if no admin exists yet
+  if (config.adminUsername && config.adminPassword) {
+    const { rows: adminRows } = await pool.query(`SELECT 1 FROM users WHERE role = 'admin' LIMIT 1`);
+    if (adminRows.length === 0) {
+      const { hashPassword } = await import('./authService');
+      const hash = await hashPassword(config.adminPassword);
+      await pool.query(
+        `INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin') ON CONFLICT (username) DO NOTHING`,
+        [config.adminUsername.toLowerCase(), hash]
+      );
+      console.log(`[db] Admin user "${config.adminUsername}" created`);
+    }
+  }
+
+  // Auto-migrate legacy API_KEY as "default" client if table is empty
   if (config.apiKey) {
     const { rows } = await pool.query('SELECT 1 FROM api_keys LIMIT 1');
     if (rows.length === 0) {
       await pool.query(
-        `INSERT INTO api_keys (key, client_name) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`,
-        [config.apiKey, 'default']
+        `INSERT INTO api_keys (key, client_name, allowed_domain) VALUES ($1, $2, $3) ON CONFLICT (key) DO NOTHING`,
+        [config.apiKey, 'default', '']
       );
       console.log('[db] Migrated legacy API_KEY as "default" client key');
     }
