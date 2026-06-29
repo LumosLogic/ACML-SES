@@ -94,7 +94,11 @@ export default function Dashboard() {
   }, [preset, customFrom, customTo, role, selectedClientId])
 
   useEffect(() => {
-    if (preset !== "custom") fetchData()
+    if (preset !== "custom") {
+      const token = decodeToken()
+      if (token?.role === "admin" && !selectedClientId) return
+      fetchData()
+    }
   }, [preset, selectedClientId, fetchData])
 
   useEffect(() => {
@@ -203,7 +207,7 @@ export default function Dashboard() {
             <div>
               <p className="text-sm font-medium text-red-700 dark:text-red-400">Unable to reach the API server</p>
               <p className="text-xs text-red-600/70 dark:text-red-500/70 mt-1">
-                {error}. Make sure the backend is running at <code className="font-mono">http://localhost:3006</code>
+                {error}
               </p>
             </div>
           </div>

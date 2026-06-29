@@ -143,11 +143,13 @@ export default function RecentEmailsPage() {
 
   useEffect(() => {
     if (preset !== "custom") {
+      const token = decodeToken()
+      if (token?.role === "admin" && !selectedClientId) return
       fetchEmails()
       const interval = setInterval(fetchEmails, 30_000)
       return () => clearInterval(interval)
     }
-  }, [preset, limit, fetchEmails])
+  }, [preset, limit, selectedClientId, fetchEmails])
 
   const handleCustomApply = () => {
     if (customFrom && customTo) fetchEmails()
