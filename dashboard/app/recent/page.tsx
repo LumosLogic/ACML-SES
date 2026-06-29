@@ -119,7 +119,7 @@ export default function RecentEmailsPage() {
         params = { limit, days: parseInt(preset) }
       }
 
-      const effectiveRole = role || decodeToken()?.role
+      const effectiveRole = decodeToken()?.role
       const isAdmin = effectiveRole === "admin"
       const isClient = effectiveRole === "client"
       let data: { emails: EmailLogEntry[] }
