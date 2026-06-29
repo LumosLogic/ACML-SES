@@ -111,7 +111,9 @@ function parseCSVBuffer(buffer: Buffer): RecipientEntry[] {
 }
 
 function senderAllowed(email: string, clientAllowedDomain: string): boolean {
-  const domain = email.split('@')[1]?.toLowerCase() ?? '';
+  const match = email.match(/<([^>]+)>/) ;
+  const address = match ? match[1] : email;
+  const domain = address.split('@')[1]?.toLowerCase() ?? '';
   // Per-client domain lock (set when key was created)
   if (clientAllowedDomain) return domain === clientAllowedDomain || domain.endsWith('.' + clientAllowedDomain);
   // Fallback to env var for legacy keys with no domain set
