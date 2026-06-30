@@ -172,16 +172,17 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       return;
     }
 
-    // Per-client daily limit check
+    // Per-client daily limit — fetch today's count early for quick reject
+    let todayCount = 0;
     if (req.dailyLimit > 0) {
       const { rows: countRows } = await pool.query<{ today_count: string }>(
         `SELECT COUNT(*) AS today_count FROM email_logs
          WHERE client_id = $1 AND sent_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date`,
         [req.clientId]
       );
-      const todayCount = parseInt(countRows[0]?.today_count ?? '0', 10);
+      todayCount = parseInt(countRows[0]?.today_count ?? '0', 10);
       if (todayCount >= req.dailyLimit) {
-        res.status(429).json({ error: `Daily sending limit of ${req.dailyLimit} emails reached. Resets at midnight UTC.` });
+        res.status(429).json({ error: `You have exceeded your limit of ${req.dailyLimit} emails per day. Resets at midnight IST.` });
         return;
       }
     }
@@ -259,6 +260,17 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       seenEmails.add(lower);
       return true;
     });
+
+    // Trim recipients to remaining daily quota
+    let dailyLimitWarning: string | undefined;
+    if (req.dailyLimit > 0) {
+      const remaining = req.dailyLimit - todayCount;
+      if (entries.length > remaining) {
+        const skipped = entries.length - remaining;
+        entries = entries.slice(0, remaining);
+        dailyLimitWarning = `Daily limit of ${req.dailyLimit} emails reached. ${skipped} email(s) were not sent. Resets at midnight IST.`;
+      }
+    }
 
     // Merge globalVars (per-recipient vars override global)
     entries = mergeGlobalVars(entries, globalVars);
@@ -356,6 +368,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
         failed: report.length - sentCount,
         skipped: skipped.length,
         results: report,
+        ...(dailyLimitWarning ? { warning: dailyLimitWarning } : {}),
       });
     } else {
       // Queue bulk job (also used for scheduled sends)
@@ -394,6 +407,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       };
 
       if (req.body.send_at) response.send_at = req.body.send_at;
+      if (dailyLimitWarning) response.warning = dailyLimitWarning;
 
       res.status(202).json(response);
     }
