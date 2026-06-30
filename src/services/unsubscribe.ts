@@ -22,24 +22,13 @@ export function buildUnsubscribeUrl(email: string): string {
   return `${config.unsubscribeBaseUrl}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
 }
 
-// Replace {{unsubscribe_url}} if present, otherwise append a footer
-export function injectUnsubscribeLink(body: string, email: string, isHtml: boolean): string {
-  const url = buildUnsubscribeUrl(email);
-
+// Replace {{unsubscribe_url}} only if explicitly present in the body
+export function injectUnsubscribeLink(body: string, email: string, _isHtml: boolean): string {
   if (body.includes('{{unsubscribe_url}}')) {
+    const url = buildUnsubscribeUrl(email);
     return body.replace(/\{\{unsubscribe_url\}\}/g, url);
   }
-
-  if (isHtml) {
-    return (
-      body +
-      `\n<div style="margin-top:32px;font-size:11px;color:#999;text-align:center;font-family:sans-serif;">` +
-      `<a href="${url}" style="color:#999;">Unsubscribe</a> from these emails` +
-      `</div>`
-    );
-  }
-
-  return body + `\n\nTo unsubscribe: ${url}`;
+  return body;
 }
 
 // Replace {{key}} placeholders with values from vars map
