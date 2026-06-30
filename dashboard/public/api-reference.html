@@ -486,6 +486,67 @@
       margin-bottom: 8px;
     }
 
+    /* ── Sidebar numbered badges ── */
+    .sidebar-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      font-size: 10px; font-weight: 700; color: #fff;
+      margin-right: 8px; flex-shrink: 0;
+    }
+    #sidebar a.active .sidebar-num { background: var(--green-bright); }
+
+    /* ── Accordion Cards ── */
+    .accordion-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .accordion-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+      background: #fff;
+      border: none; width: 100%; text-align: left;
+      transition: background 0.15s;
+    }
+    .accordion-header:hover { background: #f8fafc; }
+    .accordion-num {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .accordion-card.open .accordion-num { background: var(--green); }
+    .accordion-title { font-weight: 600; font-size: 15px; color: var(--navy); flex: 1; }
+    .accordion-chevron {
+      color: var(--text-muted); font-size: 18px; transition: transform 0.25s; line-height: 1;
+    }
+    .accordion-card.open .accordion-chevron { transform: rotate(180deg); }
+    .accordion-body {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .accordion-card.open .accordion-body { display: block; }
+    .accordion-desc { font-size: 14px; color: #374151; margin: 14px 0 8px; }
+    .expected-pill {
+      display: inline-block;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      color: #166534; font-size: 12px; font-family: "SF Mono", Consolas, monospace;
+      padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+    .note-pill {
+      display: inline-flex; align-items: flex-start; gap: 6px;
+      background: #fffbeb; border: 1px solid #fde68a;
+      color: #92400e; font-size: 12.5px;
+      padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;
+    }
+
     /* ── Overlay (mobile) ── */
     #overlay {
       display: none;
@@ -558,6 +619,20 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Complete Example
     </a>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">Test Scenarios</div>
+    <a href="#test-1"><span class="sidebar-num">1</span>Simple Plain Text</a>
+    <a href="#test-2"><span class="sidebar-num">2</span>Image Attachment</a>
+    <a href="#test-3"><span class="sidebar-num">3</span>Two PDF Attachments</a>
+    <a href="#test-4"><span class="sidebar-num">4</span>Rich HTML Email</a>
+    <a href="#test-5"><span class="sidebar-num">5</span>CC and BCC</a>
+    <a href="#test-6"><span class="sidebar-num">6</span>Password-Protected PDF</a>
+    <a href="#test-7"><span class="sidebar-num">7</span>Content Sanitisation</a>
+    <a href="#test-8"><span class="sidebar-num">8</span>Daily Limit Behaviour</a>
+    <a href="#test-9"><span class="sidebar-num">9</span>Per-Recipient Variables</a>
+    <a href="#test-10"><span class="sidebar-num">10</span>Scheduled Email</a>
+    <a href="#test-11"><span class="sidebar-num">11</span>CSV Bulk Send</a>
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Reference</div>
@@ -832,11 +907,284 @@
       </div>
 
       <!-- ═══════════════════════════════
-           SECTION 3 — ERROR REFERENCE
+           SECTION 3 — TEST SCENARIOS
+      ═══════════════════════════════ -->
+      <div id="test-scenarios">
+        <div class="section-header">
+          <div class="section-tag">Section 3</div>
+          <h2>Test Scenarios</h2>
+        </div>
+        <p class="intro-text">Eleven ready-to-run examples covering the full range of API features. Click a card to expand and copy the curl command.</p>
+
+        <!-- Test 1 -->
+        <div class="accordion-card" id="test-1">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">1</span>
+            <span class="accordion-title">Simple Plain Text Email</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends a basic plain text email with no HTML or attachments.</p>
+            <div class="expected-pill">Expected: {"status":"sent","summary":{"sent":1,...}}</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 1 - Simple Email"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=false"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"body=Hello, this is a simple plain text email. No HTML, no attachments."</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 2 -->
+        <div class="accordion-card" id="test-2">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">2</span>
+            <span class="accordion-title">Email with Image Attachment</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends an email with an image file attached (PNG/JPG). Image appears as a downloadable attachment.</p>
+            <div class="expected-pill">Expected: {"status":"sent",...} — image visible as attachment in inbox.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/image.png"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 2 - Image Attachment"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#2 — Image Attachment&lt;/h2&gt;&lt;p&gt;Please find the image attached.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 3 -->
+        <div class="accordion-card" id="test-3">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">3</span>
+            <span class="accordion-title">Email with 2 PDF Attachments</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends an email with two PDF files attached (each under 0.5 MB).</p>
+            <div class="expected-pill">Expected: Both PDFs visible as attachments in inbox.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/document1.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/document2.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 3 - Two PDF Attachments"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#3 — Two PDF Attachments&lt;/h2&gt;&lt;p&gt;Please find 2 PDF documents attached.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 4 -->
+        <div class="accordion-card" id="test-4">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">4</span>
+            <span class="accordion-title">Rich HTML Email</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends a fully styled HTML email with bold, italic, lists, and a table.</p>
+            <div class="expected-pill">Expected: Email renders with full HTML formatting.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 4 - HTML Email"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;color:#333;"&gt;&lt;h2 style="color:#0D2B4E;"&gt;#4 — Rich HTML Email&lt;/h2&gt;&lt;p&gt;This email contains &lt;strong&gt;bold&lt;/strong&gt;, &lt;em&gt;italic&lt;/em&gt;, and &lt;u&gt;underlined&lt;/u&gt; text.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Item One&lt;/li&gt;&lt;li&gt;Item Two&lt;/li&gt;&lt;li&gt;Item Three&lt;/li&gt;&lt;/ul&gt;&lt;table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;"&gt;&lt;tr style="background:#0D2B4E;color:#fff;"&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Role&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Alice&lt;/td&gt;&lt;td&gt;Developer&lt;/td&gt;&lt;td style="color:green;"&gt;Active&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Bob&lt;/td&gt;&lt;td&gt;Manager&lt;/td&gt;&lt;td style="color:green;"&gt;Active&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 5 -->
+        <div class="accordion-card" id="test-5">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">5</span>
+            <span class="accordion-title">CC and BCC</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends an email with CC and BCC recipients. CC is visible in headers; BCC is hidden from all recipients.</p>
+            <div class="expected-pill">Expected: to gets email; cc gets a copy (visible); bcc gets a silent copy.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=recipient@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"cc=cc@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"bcc=bcc@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 5 - CC and BCC"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#5 — CC and BCC&lt;/h2&gt;&lt;p&gt;To: recipient@example.com&lt;/p&gt;&lt;p&gt;CC: cc@example.com (visible)&lt;/p&gt;&lt;p&gt;BCC: bcc@example.com (hidden)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 6 -->
+        <div class="accordion-card" id="test-6">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">6</span>
+            <span class="accordion-title">Password-Protected PDF</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Sends a password-protected PDF as an attachment. The API delivers it as-is; the recipient needs the password to open it.</p>
+            <div class="expected-pill">Expected: PDF arrives as attachment; prompts for password when opened.</div>
+            <div class="note-pill">&#128161; On Mac: open PDF in Preview → File → Export as PDF → Show Details → check Encrypt → set password.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/protected.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 6 - Password Protected PDF"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#6 — Password Protected PDF&lt;/h2&gt;&lt;p&gt;Attached PDF is password protected. You will need a password to open it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 7 -->
+        <div class="accordion-card" id="test-7">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">7</span>
+            <span class="accordion-title">Content Sanitisation</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Tests that malicious HTML is stripped before sending. <code>&lt;script&gt;</code>, onclick, javascript: URLs, and <code>&lt;iframe&gt;</code> are all removed automatically.</p>
+            <div class="expected-pill">Expected: Script tags, event handlers, and JS links removed. Normal content intact.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 7 - Content Sanitisation"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#7 — Sanitisation Test&lt;/h2&gt;&lt;script&gt;alert("XSS")&lt;/script&gt;&lt;p onclick="alert(1)" style="color:red;"&gt;This had onclick — should be stripped.&lt;/p&gt;&lt;img src="javascript:alert(1)" alt="JS img"/&gt;&lt;a href="javascript:void(0)"&gt;JS link — stripped&lt;/a&gt;&lt;iframe src="https://evil.com"&gt;&lt;/iframe&gt;&lt;p&gt;This normal paragraph should remain intact.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 8 -->
+        <div class="accordion-card" id="test-8">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">8</span>
+            <span class="accordion-title">Daily Limit Behaviour</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Tests what happens when you exceed your daily email limit. Partial sends go through up to the limit; remaining are blocked with a warning.</p>
+            <div class="expected-pill">Expected: Emails up to quota sent; response includes blocked_by_daily_limit count + warning. On next call: 429.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=a@example.com,b@example.com,c@example.com,d@example.com,e@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 8 - Daily Limit"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#8 — Daily Limit Test&lt;/h2&gt;&lt;p&gt;Tests partial send when daily quota is nearly exhausted.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 9 -->
+        <div class="accordion-card" id="test-9">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">9</span>
+            <span class="accordion-title">Per-Recipient Template Variables</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Send personalised emails to multiple recipients using <code>{{variable}}</code> placeholders. Each recipient gets their own version.</p>
+            <div class="expected-pill">Expected: Each email has personalised content.</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'recipients=[{"email":"a@example.com","vars":{"name":"Alice","role":"Developer"}},{"email":"b@example.com","vars":{"name":"Bob","role":"Manager"}}]'</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Hello {{name}}!"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;Your role is: &lt;strong&gt;{{role}}&lt;/strong&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 10 -->
+        <div class="accordion-card" id="test-10">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">10</span>
+            <span class="accordion-title">Scheduled Email</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Schedule an email to be sent at a future date/time using <code>send_at</code> (ISO format). Returns a <code>job_id</code> to poll status.</p>
+            <div class="expected-pill">Expected: {"status":"scheduled","job_id":"...","send_at":"...","poll_url":"/api/job-status/..."}</div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Scheduled Email Test"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"send_at=2026-07-10T09:00:00Z"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Scheduled Email&lt;/h2&gt;&lt;p&gt;This email was scheduled and delivered at the specified time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test 11 -->
+        <div class="accordion-card" id="test-11">
+          <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-num">11</span>
+            <span class="accordion-title">CSV Bulk Send</span>
+            <span class="accordion-chevron">&#8964;</span>
+          </button>
+          <div class="accordion-body">
+            <p class="accordion-desc">Upload a CSV file with an <code>email</code> column and optional extra columns as template variables. Sends personalised emails to all rows.</p>
+            <div class="expected-pill">Expected: One personalised email per CSV row.</div>
+            <div class="note-pill">&#128196; CSV format: <code>email,name,company</code> / <code>alice@example.com,Alice,Acme</code></div>
+            <div class="code-wrap">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"csv=@/path/to/recipients.csv"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Hello {{name}} from {{company}}!"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;This is a message for &lt;strong&gt;{{company}}&lt;/strong&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+            </div>
+          </div>
+        </div>
+      </div><!-- /test-scenarios -->
+
+      <!-- ═══════════════════════════════
+           SECTION 4 — ERROR REFERENCE
       ═══════════════════════════════ -->
       <div id="error-reference">
         <div class="section-header">
-          <div class="section-tag">Section 3</div>
+          <div class="section-tag">Section 4</div>
           <h2>Error Reference</h2>
         </div>
         <p class="intro-text">
@@ -909,7 +1257,7 @@
       ═══════════════════════════════ -->
       <div id="notes">
         <div class="section-header">
-          <div class="section-tag">Section 4</div>
+          <div class="section-tag">Section 5</div>
           <h2>Notes</h2>
         </div>
 
@@ -963,6 +1311,12 @@
 </div><!-- /layout -->
 
 <script>
+  /* ── Accordion ── */
+  function toggleAccordion(btn) {
+    var card = btn.closest('.accordion-card');
+    card.classList.toggle('open');
+  }
+
   /* ── Copy Button ── */
   function copyCode(btn) {
     const pre = btn.closest('.code-wrap').querySelector('pre');
@@ -1004,7 +1358,7 @@
   /* ── Active Sidebar Link (IntersectionObserver) ── */
   (function () {
     const sections = document.querySelectorAll(
-      '#api-reference, #complete-example, #error-reference, #notes'
+      '#api-reference, #complete-example, #test-1, #test-2, #test-3, #test-4, #test-5, #test-6, #test-7, #test-8, #test-9, #test-10, #test-11, #error-reference, #notes'
     );
     const navLinks = document.querySelectorAll('#sidebar a');
 
