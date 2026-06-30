@@ -65,6 +65,7 @@ const upload = multer({
 const uploadFields = upload.fields([
   { name: 'csv', maxCount: 1 },
   { name: 'attachments', maxCount: 3 },
+  { name: 'inlineImages', maxCount: 5 },
 ]);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -213,6 +214,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const csvFile = files?.['csv']?.[0];
     const attachmentFiles = files?.['attachments'] ?? [];
+    const inlineImageFiles = files?.['inlineImages'] ?? [];
 
     // --- Resolve recipients ---
     let entries: RecipientEntry[];
@@ -293,7 +295,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     }
 
     // Validate real file type via magic bytes and sanitize filenames
-    for (const f of attachmentFiles) {
+    for (const f of [...attachmentFiles, ...inlineImageFiles]) {
       const realMime = detectMimeFromBytes(f.buffer);
       if (realMime && !ALLOWED_MIME_TYPES.has(realMime)) {
         res.status(400).json({ error: `File "${f.originalname}" has a disallowed type based on its content.` });
@@ -303,6 +305,12 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     }
 
     const attachments = attachmentFiles.map(f => ({
+      filename: f.originalname,
+      content: f.buffer,
+      contentType: f.mimetype,
+    }));
+
+    const inlineImages = inlineImageFiles.map(f => ({
       filename: f.originalname,
       content: f.buffer,
       contentType: f.mimetype,
@@ -329,6 +337,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
             cc,
             bcc,
             attachments: attachments.length > 0 ? attachments : undefined,
+            inlineImages: inlineImages.length > 0 ? inlineImages : undefined,
             smtpConfig: req.smtpConfig,
           }).then(async messageId => {
             await logEmail({
@@ -389,6 +398,14 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
 
       if (attachments.length > 0) {
         jobData.attachments = attachments.map(a => ({
+          filename: a.filename,
+          content: a.content.toString('base64'),
+          contentType: a.contentType,
+        }));
+      }
+
+      if (inlineImages.length > 0) {
+        jobData.inlineImages = inlineImages.map(a => ({
           filename: a.filename,
           content: a.content.toString('base64'),
           contentType: a.contentType,

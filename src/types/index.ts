@@ -38,6 +38,7 @@ export interface BulkJobData {
   bcc?: string;
   isHtml: boolean;
   attachments?: { filename: string; content: string; contentType: string }[];
+  inlineImages?: { filename: string; content: string; contentType: string }[];
   callbackUrl?: string;
   clientId?: string;
   smtpConfig?: SmtpConfig;

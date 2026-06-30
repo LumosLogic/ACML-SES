@@ -35,10 +35,24 @@ export async function sendEmail(params: {
   cc?: string;
   bcc?: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
+  inlineImages?: { filename: string; content: Buffer; contentType: string }[];
   smtpConfig?: SmtpConfig;
 }): Promise<string> {
   const transport = getTransporter(params.smtpConfig);
   const configSet = params.smtpConfig?.configSet ?? config.ses.configSet;
+
+  const regularAttachments = params.attachments?.map(a => ({
+    filename: a.filename,
+    content: a.content,
+    contentType: a.contentType,
+  })) ?? [];
+
+  const inlineAttachments = params.inlineImages?.map(a => ({
+    filename: a.filename,
+    content: a.content,
+    contentType: a.contentType,
+    cid: a.filename,
+  })) ?? [];
 
   const info = await transport.sendMail({
     from: params.from,
@@ -48,11 +62,7 @@ export async function sendEmail(params: {
     subject: params.subject,
     [params.isHtml ? 'html' : 'text']: params.body,
     replyTo: params.replyTo,
-    attachments: params.attachments?.map(a => ({
-      filename: a.filename,
-      content: a.content,
-      contentType: a.contentType,
-    })),
+    attachments: [...regularAttachments, ...inlineAttachments],
     headers: {
       'X-SES-CONFIGURATION-SET': configSet,
     },

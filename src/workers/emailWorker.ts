@@ -12,13 +12,21 @@ import type { BulkJobData, JobProgress } from '../types';
 const EMAIL_DELAY_MS = Math.ceil(1000 / config.ses.sendRate);
 
 async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
-  const { recipients, recipientVars, subject, body, from, replyTo, cc, bcc, isHtml, attachments: rawAttachments, callbackUrl, clientId, smtpConfig } = job.data;
+  const { recipients, recipientVars, subject, body, from, replyTo, cc, bcc, isHtml, attachments: rawAttachments, inlineImages: rawInlineImages, callbackUrl, clientId, smtpConfig } = job.data;
 
   const progress: JobProgress = { sent: 0, failed: 0, total: recipients.length, failedEmails: [] };
   await job.updateProgress({ ...progress });
 
   const attachments = rawAttachments?.length
     ? rawAttachments.map(a => ({
+        filename: a.filename,
+        content: Buffer.from(a.content, 'base64'),
+        contentType: a.contentType,
+      }))
+    : undefined;
+
+  const inlineImages = rawInlineImages?.length
+    ? rawInlineImages.map(a => ({
         filename: a.filename,
         content: Buffer.from(a.content, 'base64'),
         contentType: a.contentType,
@@ -52,6 +60,7 @@ async function processEmailJob(job: Job<BulkJobData>): Promise<JobProgress> {
         cc,
         bcc,
         attachments,
+        inlineImages,
         smtpConfig,
       });
 
