@@ -255,12 +255,13 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
 
     // Trim recipients to remaining daily quota
     let dailyLimitWarning: string | undefined;
+    let blockedByLimit = 0;
     if (req.dailyLimit > 0) {
       const remaining = req.dailyLimit - todayCount;
       if (entries.length > remaining) {
-        const skipped = entries.length - remaining;
+        blockedByLimit = entries.length - remaining;
         entries = entries.slice(0, remaining);
-        dailyLimitWarning = `Daily limit of ${req.dailyLimit} emails reached. ${skipped} email(s) were not sent. Resets at midnight IST.`;
+        dailyLimitWarning = `Daily limit of ${req.dailyLimit} emails reached. ${blockedByLimit} email(s) were not sent. Resets at midnight IST.`;
       }
     }
 
@@ -360,11 +361,11 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       res.status(sentCount === 0 ? 500 : 200).json({
         status: overallStatus,
         summary: {
-          total_requested: report.length + skipped.length + (dailyLimitWarning ? parseInt(dailyLimitWarning.match(/(\d+) email/)?.[1] ?? '0') : 0),
+          total_requested: report.length + skipped.length + blockedByLimit,
           sent: sentCount,
           failed: failedCount,
           suppressed: skipped.length,
-          blocked_by_daily_limit: dailyLimitWarning ? parseInt(dailyLimitWarning.match(/(\d+) email/)?.[1] ?? '0') : 0,
+          blocked_by_daily_limit: blockedByLimit,
         },
         ...(dailyLimitWarning ? { warning: dailyLimitWarning } : {}),
         results: report,
