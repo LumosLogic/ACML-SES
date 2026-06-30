@@ -354,13 +354,20 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
 
       const sentCount = report.filter(r => r.status === 'sent').length;
 
+      const failedCount = report.length - sentCount;
+      const overallStatus = sentCount === report.length ? 'sent' : sentCount === 0 ? 'failed' : 'partial';
+
       res.status(sentCount === 0 ? 500 : 200).json({
-        status: sentCount === report.length ? 'sent' : sentCount === 0 ? 'failed' : 'partial',
-        sent: sentCount,
-        failed: report.length - sentCount,
-        skipped: skipped.length,
-        results: report,
+        status: overallStatus,
+        summary: {
+          total_requested: report.length + skipped.length + (dailyLimitWarning ? parseInt(dailyLimitWarning.match(/(\d+) email/)?.[1] ?? '0') : 0),
+          sent: sentCount,
+          failed: failedCount,
+          suppressed: skipped.length,
+          blocked_by_daily_limit: dailyLimitWarning ? parseInt(dailyLimitWarning.match(/(\d+) email/)?.[1] ?? '0') : 0,
+        },
         ...(dailyLimitWarning ? { warning: dailyLimitWarning } : {}),
+        results: report,
       });
     } else {
       // Queue bulk job (also used for scheduled sends)
