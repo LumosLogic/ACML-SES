@@ -121,6 +121,13 @@
     #sidebar::-webkit-scrollbar { width: 4px; }
     #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
+    .sidebar-api-key-box {
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 4px;
+    }
+
     .sidebar-section-label {
       font-size: 10px;
       font-weight: 700;
@@ -642,6 +649,24 @@
 
   <!-- ── Sidebar ── -->
   <nav id="sidebar" aria-label="Page navigation">
+    <div class="sidebar-api-key-box">
+      <label for="api-key-input" style="display:block;font-size:10px;font-weight:700;letter-spacing:0.8px;color:#8fadc8;text-transform:uppercase;margin-bottom:6px;">Your API Key</label>
+      <div style="position:relative;">
+        <input
+          id="api-key-input"
+          type="text"
+          placeholder="Paste your key here…"
+          autocomplete="off"
+          spellcheck="false"
+          oninput="updateApiKey(this.value)"
+          style="width:100%;background:#091e38;border:1px solid #1e4a72;border-radius:6px;color:#e2f0ff;font-family:monospace;font-size:12px;padding:8px 32px 8px 10px;outline:none;transition:border-color .2s;"
+          onfocus="this.style.borderColor='#6ab300'"
+          onblur="this.style.borderColor='#1e4a72'"
+        />
+        <button onclick="clearApiKey()" title="Clear" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:#8fadc8;cursor:pointer;font-size:14px;line-height:1;padding:2px;">&#x2715;</button>
+      </div>
+      <p style="margin-top:5px;font-size:10px;color:#5a7a99;">All curl commands update instantly.</p>
+    </div>
     <div class="sidebar-section-label">Overview</div>
     <a href="#api-reference">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1337,6 +1362,23 @@
 </div><!-- /layout -->
 
 <script>
+  /* ── API Key Live Replace ── */
+  var _currentKey = 'YOUR_API_KEY';
+  function updateApiKey(val) {
+    var newKey = val.trim() || 'YOUR_API_KEY';
+    document.querySelectorAll('.sh-str').forEach(function(span) {
+      span.textContent = span.textContent.replace(
+        'X-Api-Key: ' + _currentKey,
+        'X-Api-Key: ' + newKey
+      );
+    });
+    _currentKey = newKey;
+  }
+  function clearApiKey() {
+    document.getElementById('api-key-input').value = '';
+    updateApiKey('');
+  }
+
   /* ── Accordion ── */
   function toggleAccordion(btn) {
     const card = btn.closest('.accordion-card');
