@@ -14,12 +14,10 @@ import clientRoutes from './routes/clientRoutes';
 import unsubscribeRoutes from './routes/unsubscribe';
 import suppressionRoutes from './routes/suppressions';
 import emailRoutes from './routes/email';
-import jobRoutes from './routes/jobs';
 import metricsRoutes from './routes/metrics';
 import statsRoutes from './routes/stats';
 import webhookRoutes from './routes/webhook';
 import docsRoutes from './routes/docs';
-import { startEmailWorker } from './workers/emailWorker';
 
 const app = express();
 
@@ -71,7 +69,6 @@ app.use('/api', rateLimiter, requireApiKey, sendRoutes);
 app.use('/api', rateLimiter, requireApiKey, suppressionRoutes);
 // Dashboard read-only routes — relaxed rate limit
 app.use('/api', dashboardLimiter, requireApiKey, emailRoutes);
-app.use('/api', dashboardLimiter, requireApiKey, jobRoutes);
 app.use('/api', dashboardLimiter, requireApiKey, metricsRoutes);
 app.use('/api', dashboardLimiter, requireApiKey, statsRoutes);
 
@@ -95,8 +92,6 @@ app.use((err: Error & { code?: string }, _req: Request, res: Response, _next: Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const worker = startEmailWorker();
-
 initDb()
   .then(() => console.log('[db] PostgreSQL ready'))
   .catch(err => console.error('[db] init failed:', err.message));
@@ -105,9 +100,8 @@ const server = app.listen(config.port, () => {
   console.log(`Server running on port ${config.port}`);
 });
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   console.log('Shutting down...');
-  await worker.close();
   server.close();
 });
 

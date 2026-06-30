@@ -4,13 +4,11 @@ import { parse } from 'csv-parse/sync';
 import { randomUUID } from 'crypto';
 import { sendEmail } from '../services/mailer';
 import { logEmail } from '../services/emailLog';
-import { emailQueue } from '../services/queue';
 import { filterSuppressed } from '../services/suppression';
 import { applyTemplate, injectUnsubscribeLink } from '../services/unsubscribe';
 import { sanitizeEmailBody } from '../services/sanitize';
 import { pool } from '../services/db';
 import { config } from '../config';
-import type { BulkJobData } from '../types';
 
 const router = Router();
 
@@ -155,7 +153,7 @@ function mergeGlobalVars(entries: RecipientEntry[], globalVars: Record<string, s
 //   attachments   file(s)  Any files (PDF, image, etc.) — up to 10
 router.post('/send', uploadFields, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { subject, body, replyTo, cc, bcc, callback_url } = req.body;
+    const { subject, body, replyTo, cc, bcc } = req.body;
     const isHtml = req.body.isHtml !== 'false';
     const from = (req.body.from as string | undefined)?.trim() || config.ses.defaultFrom;
 
@@ -197,18 +195,6 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
         res.status(400).json({ error: '"globalVars" must be a valid JSON object string' });
         return;
       }
-    }
-
-    // Parse send_at
-    let scheduleDelay: number | undefined;
-    if (req.body.send_at) {
-      const sendAt = new Date(req.body.send_at);
-      if (isNaN(sendAt.getTime())) {
-        res.status(400).json({ error: '"send_at" must be a valid ISO date string' });
-        return;
-      }
-      const delay = sendAt.getTime() - Date.now();
-      scheduleDelay = delay > 0 ? delay : 0;
     }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
@@ -270,14 +256,6 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     // Merge globalVars (per-recipient vars override global)
     entries = mergeGlobalVars(entries, globalVars);
 
-    // --- Cap recipients ---
-    if (entries.length > config.maxRecipientsPerRequest) {
-      res.status(400).json({
-        error: `Too many recipients. Max allowed per request: ${config.maxRecipientsPerRequest}`,
-      });
-      return;
-    }
-
     // --- Filter suppressed ---
     const emails = entries.map(e => e.email);
     const { allowed: allowedEmails, skipped } = await filterSuppressed(emails);
@@ -316,12 +294,8 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       contentType: f.mimetype,
     }));
 
-    // --- Send immediately or queue ---
-    const forceQueue = scheduleDelay !== undefined;
-
-    if (!forceQueue && allowedEntries.length <= config.bulkThreshold) {
-      // Send immediately with per-recipient vars + unsubscribe injection
-      const results = await Promise.allSettled(
+    // --- Send directly ---
+    const results = await Promise.allSettled(
         allowedEntries.map(({ email, vars }) => {
           const finalVars = { ...vars, email };
           const renderedSubject = applyTemplate(subject, finalVars);
@@ -379,55 +353,6 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
         ...(dailyLimitWarning ? { warning: dailyLimitWarning } : {}),
         results: report,
       });
-    } else {
-      // Queue bulk job (also used for scheduled sends)
-      const jobData: BulkJobData = {
-        recipients: allowedEntries.map(e => e.email),
-        recipientVars: allowedEntries.map(e => e.vars),
-        subject,
-        body,
-        from,
-        replyTo,
-        cc,
-        bcc,
-        isHtml,
-        callbackUrl: callback_url,
-        clientId: req.clientId,
-        smtpConfig: req.smtpConfig,
-      };
-
-      if (attachments.length > 0) {
-        jobData.attachments = attachments.map(a => ({
-          filename: a.filename,
-          content: a.content.toString('base64'),
-          contentType: a.contentType,
-        }));
-      }
-
-      if (inlineImages.length > 0) {
-        jobData.inlineImages = inlineImages.map(a => ({
-          filename: a.filename,
-          content: a.content.toString('base64'),
-          contentType: a.contentType,
-        }));
-      }
-
-      const jobOptions = scheduleDelay !== undefined ? { delay: scheduleDelay } : undefined;
-      const job = await emailQueue.add('bulk-send', jobData, jobOptions);
-
-      const response: Record<string, unknown> = {
-        status: scheduleDelay !== undefined ? 'scheduled' : 'queued',
-        job_id: job.id,
-        total_recipients: allowedEntries.length,
-        skipped: skipped.length,
-        poll_url: `/api/job-status/${job.id}`,
-      };
-
-      if (req.body.send_at) response.send_at = req.body.send_at;
-      if (dailyLimitWarning) response.warning = dailyLimitWarning;
-
-      res.status(202).json(response);
-    }
   } catch (err) {
     next(err);
   }

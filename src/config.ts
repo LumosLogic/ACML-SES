@@ -25,9 +25,6 @@ export const config = {
   adminUsername: process.env.ADMIN_USERNAME || '',
   adminEmail: process.env.ADMIN_EMAIL || '',
   adminPassword: process.env.ADMIN_PASSWORD || '',
-  redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-  },
   databaseUrl: process.env.DATABASE_URL || 'postgresql://recruitx:recruitx123@localhost:5432/recruitx',
   apiKey: process.env.API_KEY || '',          // legacy fallback
   adminKey: process.env.ADMIN_KEY || '',

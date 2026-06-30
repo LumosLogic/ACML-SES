@@ -27,26 +27,3 @@ declare global {
   }
 }
 
-export interface BulkJobData {
-  recipients: string[];
-  recipientVars?: Record<string, string>[];
-  subject: string;
-  body: string;
-  from: string;
-  replyTo?: string;
-  cc?: string;
-  bcc?: string;
-  isHtml: boolean;
-  attachments?: { filename: string; content: string; contentType: string }[];
-  inlineImages?: { filename: string; content: string; contentType: string }[];
-  callbackUrl?: string;
-  clientId?: string;
-  smtpConfig?: SmtpConfig;
-}
-
-export interface JobProgress {
-  sent: number;
-  failed: number;
-  total: number;
-  failedEmails: string[];
-}
