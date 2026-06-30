@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACML SES — Email API Reference</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #0D2B4E;
+      --navy-dark:   #091e38;
+      --navy-light:  #143557;
+      --green:       #3D6B00;
+      --green-light: #4e8800;
+      --green-bright:#6ab300;
+      --accent-blue: #2563eb;
+      --sidebar-w:   268px;
+      --text-main:   #1a1a2e;
+      --text-muted:  #6b7280;
+      --border:      #e5e7eb;
+      --code-bg:     #0f1117;
+      --white:       #ffffff;
+      --offwhite:    #f9fafb;
+    }
+
+    html { scroll-behavior: smooth; font-size: 15px; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-main);
+      background: var(--offwhite);
+      line-height: 1.65;
+    }
+
+    /* ── Top Header Bar ── */
+    #top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--navy-dark);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 1000;
+      border-bottom: 2px solid var(--green);
+      gap: 14px;
+    }
+
+    #top-bar .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--green);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; color: #fff;
+      letter-spacing: -0.5px; flex-shrink: 0;
+    }
+
+    #top-bar .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.2px;
+    }
+
+    #top-bar .title span {
+      color: var(--green-bright);
+    }
+
+    #top-bar .badge {
+      margin-left: auto;
+      background: var(--green);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.4px;
+    }
+
+    /* Hamburger — mobile only */
+    #hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      flex-direction: column;
+      gap: 5px;
+      margin-right: 4px;
+    }
+    #hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: #fff;
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+
+    /* ── Layout ── */
+    #layout {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--navy);
+      position: fixed;
+      top: 56px; bottom: 0; left: 0;
+      overflow-y: auto;
+      z-index: 900;
+      padding: 0 0 40px;
+      transition: transform 0.3s ease;
+    }
+
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(255,255,255,0.35);
+      padding: 22px 20px 6px;
+    }
+
+    #sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      color: rgba(255,255,255,0.72);
+      text-decoration: none;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+      transition: all 0.18s;
+      line-height: 1.4;
+    }
+
+    #sidebar a:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.06);
+      border-left-color: rgba(255,255,255,0.2);
+    }
+
+    #sidebar a.active {
+      color: var(--green-bright);
+      border-left-color: var(--green-bright);
+      background: rgba(106,179,0,0.1);
+      font-weight: 600;
+    }
+
+    .sidebar-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+      color: #fff;
+    }
+
+    #sidebar a.active .sidebar-num {
+      background: var(--green);
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 10px 20px;
+    }
+
+    /* ── Main Content ── */
+    #content {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+      padding: 0;
+    }
+
+    .content-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 48px 100px;
+    }
+
+    /* ── Section Headings ── */
+    .section-header {
+      border-bottom: 2px solid var(--navy);
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+      margin-top: 64px;
+    }
+
+    .section-header:first-of-type { margin-top: 0; }
+
+    .section-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+
+    .section-header h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.25;
+    }
+
+    h3.sub-heading {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 32px 0 12px;
+    }
+
+    p.intro-text {
+      font-size: 15px;
+      color: #374151;
+      margin-bottom: 20px;
+      max-width: 680px;
+    }
+
+    /* ── Endpoint Badge ── */
+    .endpoint-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      flex-wrap: wrap;
+    }
+
+    .method-badge {
+      background: var(--navy);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .endpoint-url {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: 14px;
+      color: var(--navy);
+      word-break: break-all;
+    }
+
+    .auth-note {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .auth-note code {
+      background: #f0f4f8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12px;
+      color: var(--navy);
+    }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      margin-bottom: 32px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      background: #fff;
+    }
+
+    thead tr {
+      background: var(--navy);
+    }
+
+    thead th {
+      color: #fff;
+      font-weight: 700;
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:nth-child(odd)  { background: #fff; }
+    tbody tr:hover { background: #eef3fb; }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #eef0f3;
+      vertical-align: top;
+      line-height: 1.5;
+      color: #374151;
+    }
+
+    tbody td:first-child {
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12.5px;
+      color: var(--navy);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-req {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-yes   { background: #dcfce7; color: #166534; }
+    .badge-no    { background: #f1f5f9; color: #64748b; }
+    .badge-cond  { background: #fef9c3; color: #713f12; }
+
+    /* ── Code Blocks ── */
+    .code-wrap {
+      position: relative;
+      margin: 18px 0 26px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a1f2e;
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .code-lang {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.65);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.18s;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+    }
+
+    .copy-btn:hover  { background: rgba(255,255,255,0.15); color: #fff; }
+    .copy-btn.copied { background: var(--green); border-color: var(--green); color: #fff; }
+
+    pre {
+      background: var(--code-bg);
+      color: #e2e8f0;
+      padding: 18px 20px;
+      overflow-x: auto;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.75;
+      tab-size: 2;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    pre::-webkit-scrollbar { height: 5px; }
+    pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+    /* Syntax colours */
+    .sh-flag   { color: #7dd3fc; }   /* -H, -F flags */
+    .sh-url    { color: #a5f3fc; }   /* URL */
+    .sh-str    { color: #86efac; }   /* string values */
+    .sh-cmd    { color: #fb923c; }   /* curl */
+    .sh-kw     { color: #c084fc; }   /* curl options like --form-string */
+    .sh-bs     { color: #94a3b8; }   /* backslash continuation */
+
+    .j-key     { color: #7dd3fc; }   /* JSON key */
+    .j-str     { color: #86efac; }   /* JSON string value */
+    .j-num     { color: #fb923c; }   /* JSON number */
+    .j-bool    { color: #f472b6; }   /* JSON bool/null */
+    .j-punc    { color: #94a3b8; }   /* { } [ ] : , */
+
+    .csv-hdr   { color: #c084fc; }
+    .csv-val   { color: #86efac; }
+
+    /* ── Accordion (Test Cards) ── */
+    .accordion-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+    .accordion-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: box-shadow 0.2s;
+    }
+
+    .accordion-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.09); }
+
+    .accordion-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+    }
+
+    .accordion-trigger:hover { background: #f8fafc; }
+    .accordion-card.open .accordion-trigger { background: #f0f6ff; }
+
+    .test-num-badge {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .accordion-card.open .test-num-badge { background: var(--green); }
+
+    .accordion-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--navy);
+      flex: 1;
+    }
+
+    .accordion-chevron {
+      color: var(--text-muted);
+      font-size: 18px;
+      transition: transform 0.25s;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .accordion-card.open .accordion-chevron { transform: rotate(180deg); }
+
+    .accordion-body {
+      display: none;
+      padding: 0 22px 22px;
+      border-top: 1px solid var(--border);
+    }
+
+    .accordion-card.open .accordion-body { display: block; }
+
+    .test-desc {
+      font-size: 14px;
+      color: #374151;
+      margin: 16px 0 12px;
+      line-height: 1.6;
+    }
+
+    .expected-pill {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #166534;
+      line-height: 1.5;
+    }
+
+    .expected-pill strong { flex-shrink: 0; }
+
+    .note-pill {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #78350f;
+      line-height: 1.5;
+    }
+
+    /* ── Error Table ── */
+    .status-cell {
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .s400 { color: #b45309; }
+    .s401 { color: #dc2626; }
+    .s429 { color: #7c3aed; }
+    .s500 { color: #be123c; }
+
+    /* ── Notes Section ── */
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .note-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .note-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: var(--navy);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .note-card strong { color: var(--navy); }
+    .note-card p { font-size: 13.5px; color: #374151; line-height: 1.6; }
+
+    /* ── Inline code ── */
+    code {
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 12.5px;
+      background: #f0f4f8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--navy);
+    }
+
+    /* ── Overlay (mobile) ── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 850;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .content-inner { padding: 32px 24px 80px; }
+    }
+
+    @media (max-width: 720px) {
+      #hamburger { display: flex; }
+
+      #sidebar {
+        transform: translateX(-100%);
+      }
+      #sidebar.open {
+        transform: translateX(0);
+      }
+      #overlay.open { display: block; }
+
+      #content { margin-left: 0; }
+      .content-inner { padding: 24px 16px 80px; }
+
+      .section-header h2 { font-size: 22px; }
+      .endpoint-box { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
+
+    @media (max-width: 480px) {
+      .code-header { flex-wrap: wrap; gap: 6px; }
+      thead th { font-size: 11px; padding: 9px 10px; }
+      tbody td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────
+     TOP BAR
+───────────────────────────────────── -->
+<header id="top-bar">
+  <button id="hamburger" aria-label="Toggle navigation" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="logo-mark">AC</div>
+  <div class="title">ACML SES &mdash; <span>Email API Reference</span></div>
+  <div class="badge">v1.0</div>
+</header>
+
+<!-- Mobile overlay -->
+<div id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ─────────────────────────────────────
+     LAYOUT
+───────────────────────────────────── -->
+<div id="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar" aria-label="Page navigation">
+    <div class="sidebar-section-label">Overview</div>
+    <a href="#api-reference">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      API Reference
+    </a>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">Test Scenarios</div>
+
+    <a href="#test-1"><span class="sidebar-num">1</span>Simple Plain Text</a>
+    <a href="#test-2"><span class="sidebar-num">2</span>Image Attachment</a>
+    <a href="#test-3"><span class="sidebar-num">3</span>Two PDF Attachments</a>
+    <a href="#test-4"><span class="sidebar-num">4</span>Rich HTML Email</a>
+    <a href="#test-5"><span class="sidebar-num">5</span>CC and BCC</a>
+    <a href="#test-6"><span class="sidebar-num">6</span>Password-Protected PDF</a>
+    <a href="#test-7"><span class="sidebar-num">7</span>Content Sanitisation</a>
+    <a href="#test-8"><span class="sidebar-num">8</span>Daily Limit Behaviour</a>
+    <a href="#test-9"><span class="sidebar-num">9</span>Per-Recipient Variables</a>
+    <a href="#test-10"><span class="sidebar-num">10</span>Scheduled Email</a>
+    <a href="#test-11"><span class="sidebar-num">11</span>CSV Bulk Send</a>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">Reference</div>
+    <a href="#error-reference">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Error Reference
+    </a>
+    <a href="#notes">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Notes
+    </a>
+  </nav>
+
+  <!-- ── Main Content ── -->
+  <main id="content">
+    <div class="content-inner">
+
+      <!-- ═══════════════════════════════
+           SECTION 1 — API REFERENCE
+      ═══════════════════════════════ -->
+      <div id="api-reference">
+        <div class="section-header">
+          <div class="section-tag">Section 1</div>
+          <h2>API Reference</h2>
+        </div>
+
+        <p class="intro-text">
+          The ACML SES API lets you send transactional and bulk email programmatically via a single HTTP endpoint.
+          All requests use <strong>multipart/form-data</strong> and are authenticated with your API key.
+        </p>
+
+        <div class="endpoint-box">
+          <span class="method-badge">POST</span>
+          <span class="endpoint-url">https://lumosmails.lumoslogic.com/api/send</span>
+        </div>
+        <p class="auth-note">Authentication: <code>X-Api-Key: &lt;your-api-key&gt;</code> &nbsp;·&nbsp; Content-Type: <code>multipart/form-data</code></p>
+
+        <h3 class="sub-heading">Request Fields</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>from</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Sender name + email, e.g. <code>ACML &lt;ACML@mail.acml.co.in&gt;</code>. Defaults to system default if omitted. Must match your allowed domain.</td>
+              </tr>
+              <tr>
+                <td>to</td>
+                <td>string</td>
+                <td><span class="badge-req badge-cond">Yes*</span></td>
+                <td>Comma-separated recipient email addresses. *Required if neither <code>recipients</code> nor <code>csv</code> is provided.</td>
+              </tr>
+              <tr>
+                <td>recipients</td>
+                <td>string (JSON)</td>
+                <td><span class="badge-req badge-cond">Yes*</span></td>
+                <td>JSON array with per-recipient variables: <code>[{"email":"a@x.com","vars":{"name":"John"}}]</code></td>
+              </tr>
+              <tr>
+                <td>csv</td>
+                <td>file</td>
+                <td><span class="badge-req badge-cond">Yes*</span></td>
+                <td>CSV file with an <code>email</code> column. Extra columns become per-recipient template variables.</td>
+              </tr>
+              <tr>
+                <td>subject</td>
+                <td>string</td>
+                <td><span class="badge-req badge-yes">Yes</span></td>
+                <td>Email subject line. Supports <code>{{variable}}</code> placeholders.</td>
+              </tr>
+              <tr>
+                <td>body</td>
+                <td>string</td>
+                <td><span class="badge-req badge-yes">Yes</span></td>
+                <td>Email body (HTML or plain text). Supports <code>{{variable}}</code> and <code>{{unsubscribe_url}}</code>.</td>
+              </tr>
+              <tr>
+                <td>isHtml</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td><code>"true"</code> or <code>"false"</code>. Default: <code>"true"</code></td>
+              </tr>
+              <tr>
+                <td>replyTo</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Reply-To email address.</td>
+              </tr>
+              <tr>
+                <td>cc</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Comma-separated CC email addresses.</td>
+              </tr>
+              <tr>
+                <td>bcc</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Comma-separated BCC email addresses.</td>
+              </tr>
+              <tr>
+                <td>globalVars</td>
+                <td>string (JSON)</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>JSON object applied to all recipients, e.g. <code>{"company":"ACML"}</code>. Per-recipient vars override these.</td>
+              </tr>
+              <tr>
+                <td>send_at</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>ISO 8601 datetime to schedule delivery, e.g. <code>2026-07-01T09:00:00Z</code></td>
+              </tr>
+              <tr>
+                <td>attachments</td>
+                <td>file(s)</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Up to 3 files, max 2 MB each. Allowed: PDF, JPG, PNG, GIF, WEBP, DOC, DOCX, XLS, XLSX, TXT, CSV, ZIP.</td>
+              </tr>
+              <tr>
+                <td>callback_url</td>
+                <td>string</td>
+                <td><span class="badge-req badge-no">No</span></td>
+                <td>Webhook URL called when a bulk job completes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Response Format ── -->
+        <h3 class="sub-heading">Response Format</h3>
+        <p class="intro-text">The API returns JSON. The shape depends on whether the send is immediate or queued/scheduled.</p>
+
+        <h3 class="sub-heading" style="font-size:15px;margin-top:18px;">Standard Response</h3>
+        <div class="code-wrap">
+          <div class="code-header">
+            <span class="code-lang">JSON</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="j-punc">{</span>
+  <span class="j-key">"status"</span><span class="j-punc">:</span> <span class="j-str">"sent | partial | failed | queued | scheduled | skipped"</span><span class="j-punc">,</span>
+  <span class="j-key">"summary"</span><span class="j-punc">:</span> <span class="j-punc">{</span>
+    <span class="j-key">"total_requested"</span><span class="j-punc">:</span>    <span class="j-num">10</span><span class="j-punc">,</span>
+    <span class="j-key">"sent"</span><span class="j-punc">:</span>               <span class="j-num">8</span><span class="j-punc">,</span>
+    <span class="j-key">"failed"</span><span class="j-punc">:</span>             <span class="j-num">0</span><span class="j-punc">,</span>
+    <span class="j-key">"suppressed"</span><span class="j-punc">:</span>         <span class="j-num">2</span><span class="j-punc">,</span>
+    <span class="j-key">"blocked_by_daily_limit"</span><span class="j-punc">:</span> <span class="j-num">0</span>
+  <span class="j-punc">},</span>
+  <span class="j-key">"warning"</span><span class="j-punc">:</span> <span class="j-str">"Daily limit of 5000 emails reached. 2 email(s) were not sent. Resets at midnight IST."</span><span class="j-punc">,</span>
+  <span class="j-key">"results"</span><span class="j-punc">:</span> <span class="j-punc">[</span>
+    <span class="j-punc">{</span>
+      <span class="j-key">"email"</span><span class="j-punc">:</span>     <span class="j-str">"user@example.com"</span><span class="j-punc">,</span>
+      <span class="j-key">"status"</span><span class="j-punc">:</span>    <span class="j-str">"sent"</span><span class="j-punc">,</span>
+      <span class="j-key">"messageId"</span><span class="j-punc">:</span> <span class="j-str">"abc123"</span>
+    <span class="j-punc">}</span>
+  <span class="j-punc">]</span>
+<span class="j-punc">}</span></pre>
+        </div>
+
+        <h3 class="sub-heading" style="font-size:15px;margin-top:18px;">Bulk / Scheduled Response <span style="font-size:12px;color:var(--text-muted);font-weight:400;">&gt;50 recipients or send_at set</span></h3>
+        <div class="code-wrap">
+          <div class="code-header">
+            <span class="code-lang">JSON</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="j-punc">{</span>
+  <span class="j-key">"status"</span><span class="j-punc">:</span>            <span class="j-str">"queued | scheduled"</span><span class="j-punc">,</span>
+  <span class="j-key">"job_id"</span><span class="j-punc">:</span>           <span class="j-str">"42"</span><span class="j-punc">,</span>
+  <span class="j-key">"total_recipients"</span><span class="j-punc">:</span> <span class="j-num">500</span><span class="j-punc">,</span>
+  <span class="j-key">"skipped"</span><span class="j-punc">:</span>          <span class="j-num">3</span><span class="j-punc">,</span>
+  <span class="j-key">"poll_url"</span><span class="j-punc">:</span>         <span class="j-str">"/api/job-status/42"</span><span class="j-punc">,</span>
+  <span class="j-key">"send_at"</span><span class="j-punc">:</span>          <span class="j-str">"2026-07-01T09:00:00Z"</span>
+<span class="j-punc">}</span></pre>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════
+           SECTION 2 — TEST SCENARIOS
+      ═══════════════════════════════ -->
+      <div id="test-scenarios">
+        <div class="section-header">
+          <div class="section-tag">Section 2</div>
+          <h2>Test Scenarios</h2>
+        </div>
+        <p class="intro-text">
+          Eleven ready-to-run tests covering the full range of API features. Click a card to expand it and copy the curl command.
+        </p>
+
+        <div class="accordion-list">
+
+          <!-- Test 1 -->
+          <div class="accordion-card" id="test-1">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">1</div>
+              <div class="accordion-title">Simple Plain Text Email</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends a basic plain text email with no HTML or attachments. The simplest possible API call.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span><code style="background:transparent;padding:0;color:inherit;">{"status":"sent","summary":{"sent":1,...}}</code></span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 1 - Simple Email"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=false"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"body=Hello, this is a simple plain text email. No HTML, no attachments."</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 2 -->
+          <div class="accordion-card" id="test-2">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">2</div>
+              <div class="accordion-title">Email with Image Attachment</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends an email with an image file attached (PNG or JPG). The image appears as a downloadable attachment in the recipient's inbox.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span><code style="background:transparent;padding:0;color:inherit;">{"status":"sent",...}</code> — image visible as attachment in inbox.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/image.png"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 2 - Image Attachment"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#2 — Image Attachment&lt;/h2&gt;&lt;p&gt;Please find the image attached to this email.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 3 -->
+          <div class="accordion-card" id="test-3">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">3</div>
+              <div class="accordion-title">Email with Two PDF Attachments</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends an email with two PDF files attached (each under 0.5 MB). Tests multi-file attachment handling in a single request.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>Both PDFs visible as attachments in the inbox.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/document1.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/document2.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 3 - Two PDF Attachments"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#3 — Two PDF Attachments&lt;/h2&gt;&lt;p&gt;Please find 2 PDF documents attached.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 4 -->
+          <div class="accordion-card" id="test-4">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">4</div>
+              <div class="accordion-title">Rich HTML Email</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends a fully styled HTML email with bold, italic, lists, and a data table. Verifies that full HTML formatting is preserved end-to-end.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>Email renders with full HTML formatting — styles, list, and table all visible.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 4 - HTML Email"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;color:#333;"&gt;&lt;h2 style="color:#0D2B4E;"&gt;#4 — Rich HTML Email&lt;/h2&gt;&lt;p&gt;This email contains &lt;strong&gt;bold&lt;/strong&gt;, &lt;em&gt;italic&lt;/em&gt;, and &lt;u&gt;underlined&lt;/u&gt; text.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Item One&lt;/li&gt;&lt;li&gt;Item Two&lt;/li&gt;&lt;li&gt;Item Three&lt;/li&gt;&lt;/ul&gt;&lt;table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;"&gt;&lt;tr style="background-color:#0D2B4E;color:#fff;"&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Role&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Alice&lt;/td&gt;&lt;td&gt;Developer&lt;/td&gt;&lt;td style="color:green;"&gt;Active&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Bob&lt;/td&gt;&lt;td&gt;Manager&lt;/td&gt;&lt;td style="color:green;"&gt;Active&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 5 -->
+          <div class="accordion-card" id="test-5">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">5</div>
+              <div class="accordion-title">Email with CC and BCC</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends an email with both CC and BCC recipients. The CC recipient can see they were copied; the BCC address is hidden from all recipients.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span><code style="background:transparent;padding:0;color:inherit;">to</code> gets the email; <code style="background:transparent;padding:0;color:inherit;">cc</code> gets a copy and is visible in headers; <code style="background:transparent;padding:0;color:inherit;">bcc</code> gets a silent copy.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=recipient@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"cc=cc@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"bcc=bcc@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 5 - CC and BCC"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#5 — CC and BCC&lt;/h2&gt;&lt;p&gt;To: recipient@example.com&lt;/p&gt;&lt;p&gt;CC: cc@example.com (visible)&lt;/p&gt;&lt;p&gt;BCC: bcc@example.com (hidden)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 6 -->
+          <div class="accordion-card" id="test-6">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">6</div>
+              <div class="accordion-title">Password-Protected PDF</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends a password-protected PDF as an attachment. The API delivers it as-is; the recipient needs the correct password to open it.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>PDF arrives as an attachment and prompts for a password when opened.</span>
+              </div>
+              <div class="note-pill">
+                <span>&#9888;</span>
+                <span><strong>Mac tip:</strong> Open PDF in Preview &rarr; File &rarr; Export as PDF &rarr; Show Details &rarr; check "Encrypt" &rarr; set password.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/protected.pdf"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 6 - Password Protected PDF"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#6 — Password Protected PDF&lt;/h2&gt;&lt;p&gt;Attached PDF is password protected. You will need a password to open it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 7 -->
+          <div class="accordion-card" id="test-7">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">7</div>
+              <div class="accordion-title">Content Sanitisation</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Tests that malicious HTML is stripped before sending. <code>&lt;script&gt;</code> tags, <code>onclick</code> handlers, <code>javascript:</code> URLs, and <code>&lt;iframe&gt;</code> elements are all removed automatically by the API.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>Script tags, event handlers, and JS links are removed. Normal paragraph content remains intact.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 7 - Content Sanitisation"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#7 — Sanitisation Test&lt;/h2&gt;&lt;script&gt;alert("XSS")&lt;/script&gt;&lt;p onclick="alert(1)" style="color:red;"&gt;This had onclick — should be stripped.&lt;/p&gt;&lt;img src="javascript:alert(1)" alt="JS img"/&gt;&lt;a href="javascript:void(0)"&gt;JS link — stripped&lt;/a&gt;&lt;iframe src="https://evil.com"&gt;&lt;/iframe&gt;&lt;p&gt;This normal paragraph should remain intact.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 8 -->
+          <div class="accordion-card" id="test-8">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">8</div>
+              <div class="accordion-title">Daily Limit Behaviour</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Tests what happens when you exceed your daily email quota. Emails up to the remaining limit are sent; any beyond that are blocked with a clear warning in the response.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>Emails up to remaining quota are sent. Response includes <code style="background:transparent;padding:0;color:inherit;">blocked_by_daily_limit</code> count and a warning. Subsequent calls after limit exhaustion return HTTP 429.</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=a@example.com,b@example.com,c@example.com,d@example.com,e@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Test 8 - Daily Limit"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;#8 — Daily Limit Test&lt;/h2&gt;&lt;p&gt;Tests partial send when daily quota is nearly exhausted.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 9 -->
+          <div class="accordion-card" id="test-9">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">9</div>
+              <div class="accordion-title">Per-Recipient Template Variables</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Sends personalised emails to multiple recipients using <code>{{variable}}</code> placeholders. Each recipient receives their own customised version of the email body and subject.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>Each email has personalised content — Alice sees "Hello Alice, Developer" and Bob sees "Hello Bob, Manager".</span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'recipients=[{"email":"a@example.com","vars":{"name":"Alice","role":"Developer"}},{"email":"b@example.com","vars":{"name":"Bob","role":"Manager"}}]'</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Hello {{name}}!"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;Your role is: &lt;strong&gt;{{role}}&lt;/strong&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 10 -->
+          <div class="accordion-card" id="test-10">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">10</div>
+              <div class="accordion-title">Scheduled Email</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Schedules an email to be sent at a future date and time using the <code>send_at</code> field (ISO 8601 format). The API queues the job and returns a <code>job_id</code> you can poll for status.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span><code style="background:transparent;padding:0;color:inherit;">{"status":"scheduled","job_id":"...","send_at":"...","poll_url":"/api/job-status/..."}</code></span>
+              </div>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Scheduled Email Test"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"send_at=2026-07-02T09:00:00Z"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Scheduled Email&lt;/h2&gt;&lt;p&gt;This email was scheduled and delivered at the specified time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test 11 -->
+          <div class="accordion-card" id="test-11">
+            <button class="accordion-trigger" onclick="toggleAccordion(this)">
+              <div class="test-num-badge">11</div>
+              <div class="accordion-title">CSV Bulk Send</div>
+              <div class="accordion-chevron">&#8964;</div>
+            </button>
+            <div class="accordion-body">
+              <p class="test-desc">Uploads a CSV file with an <code>email</code> column and optional extra columns that become per-recipient template variables. The API sends one personalised email per CSV row.</p>
+              <div class="expected-pill">
+                <strong>Expected:</strong>
+                <span>One personalised email sent per CSV row, with <code style="background:transparent;padding:0;color:inherit;">{{name}}</code> and <code style="background:transparent;padding:0;color:inherit;">{{company}}</code> substituted per recipient.</span>
+              </div>
+
+              <p style="font-size:13px;font-weight:600;color:var(--navy);margin:14px 0 6px;">CSV Format</p>
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">CSV</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="csv-hdr">email</span><span class="j-punc">,</span><span class="csv-hdr">name</span><span class="j-punc">,</span><span class="csv-hdr">company</span>
+<span class="csv-val">alice@example.com</span><span class="j-punc">,</span><span class="csv-val">Alice</span><span class="j-punc">,</span><span class="csv-val">Acme</span>
+<span class="csv-val">bob@example.com</span><span class="j-punc">,</span><span class="csv-val">Bob</span><span class="j-punc">,</span><span class="csv-val">Corp</span></pre>
+              </div>
+
+              <div class="code-wrap">
+                <div class="code-header">
+                  <span class="code-lang">Shell — curl</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><span class="sh-cmd">curl</span> <span class="sh-flag">-X</span> POST https://lumosmails.lumoslogic.com/api/send <span class="sh-bs">\</span>
+  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"from=ACML &lt;ACML@mail.acml.co.in&gt;"</span> <span class="sh-bs">\</span>
+  <span class="sh-flag">-F</span> <span class="sh-str">"csv=@/path/to/recipients.csv"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Hello {{name}} from {{company}}!"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;This is a message for &lt;strong&gt;{{company}}&lt;/strong&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /accordion-list -->
+      </div><!-- /test-scenarios -->
+
+      <!-- ═══════════════════════════════
+           SECTION 3 — ERROR REFERENCE
+      ═══════════════════════════════ -->
+      <div id="error-reference">
+        <div class="section-header">
+          <div class="section-tag">Section 3</div>
+          <h2>Error Reference</h2>
+        </div>
+        <p class="intro-text">
+          All error responses return JSON with an <code>error</code> field describing the issue.
+          The HTTP status code indicates the error category.
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Error Message</th>
+                <th>Cause</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>"subject" is required</td>
+                <td>The <code>subject</code> field was not included in the request.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>"body" is required</td>
+                <td>The <code>body</code> field was not included in the request.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>Sender domain is not allowed</td>
+                <td>The domain in the <code>from</code> field does not match the allowed domain for your API key.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>Too many recipients</td>
+                <td>The number of recipients in a single request exceeded the maximum allowed limit.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>Invalid CSV</td>
+                <td>The uploaded CSV file is missing headers or does not contain an <code>email</code> column.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s400">400</span></td>
+                <td>File type not allowed</td>
+                <td>An attachment's MIME type is not in the permitted list (PDF, JPG, PNG, GIF, WEBP, DOC/X, XLS/X, TXT, CSV, ZIP).</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s401">401</span></td>
+                <td>Unauthorized</td>
+                <td>The <code>X-Api-Key</code> header is missing, empty, or the key is invalid / revoked.</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s429">429</span></td>
+                <td>You have exceeded your limit</td>
+                <td>Your daily email quota is fully exhausted. Quota resets at midnight IST (Asia/Kolkata).</td>
+              </tr>
+              <tr>
+                <td><span class="status-cell s500">500</span></td>
+                <td>Internal Server Error</td>
+                <td>All emails in the request failed to send due to an upstream delivery error.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════
+           SECTION 4 — NOTES
+      ═══════════════════════════════ -->
+      <div id="notes">
+        <div class="section-header">
+          <div class="section-tag">Section 4</div>
+          <h2>Notes</h2>
+        </div>
+
+        <div class="notes-list">
+          <div class="note-card">
+            <div class="note-icon">&#8649;</div>
+            <div>
+              <p><strong>Bulk sending:</strong> Requests with more than 50 recipients are automatically queued as background jobs. The response returns a <code>job_id</code> instead of immediate results. Poll <code>/api/job-status/{job_id}</code> to track progress and retrieve final delivery stats.</p>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <div class="note-icon">&#123;&#125;</div>
+            <div>
+              <p><strong>Template variables:</strong> Use <code>{{variable_name}}</code> placeholders anywhere in the <code>subject</code> or <code>body</code>. At send time they are replaced with values from each recipient's <code>vars</code> object (from <code>recipients</code> or CSV columns). Values from <code>globalVars</code> serve as defaults and are overridden by per-recipient vars.</p>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <div class="note-icon">&#8617;</div>
+            <div>
+              <p><strong>Unsubscribe:</strong> Add <code>{{unsubscribe_url}}</code> anywhere in the email body to automatically inject a unique, per-recipient unsubscribe link. Recipients who click it are suppressed from future sends.</p>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <div class="note-icon">&#128206;</div>
+            <div>
+              <p><strong>Attachments:</strong> Maximum of 3 files per request, each up to 2 MB. Allowed file types: <strong>PDF, JPG, PNG, GIF, WEBP, DOC, DOCX, XLS, XLSX, TXT, CSV, ZIP</strong>. Files exceeding size or type restrictions will result in a 400 error.</p>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <div class="note-icon">&#8987;</div>
+            <div>
+              <p><strong>Daily limit:</strong> Each API key has a daily email send quota. The quota resets at <strong>midnight IST (Asia/Kolkata)</strong>. Partial sends are allowed — emails up to the remaining quota go through, and any beyond are blocked with a <code>blocked_by_daily_limit</code> count in the response. Once fully exhausted, the API returns HTTP 429 until reset.</p>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <div class="note-icon">&#128683;</div>
+            <div>
+              <p><strong>Suppression:</strong> Addresses that have previously hard-bounced or generated a spam complaint are automatically suppressed. They are skipped silently during sending and counted in the <code>suppressed</code> field of the response summary — no error is raised.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-inner -->
+  </main>
+</div><!-- /layout -->
+
+<script>
+  /* ── Accordion ── */
+  function toggleAccordion(btn) {
+    const card = btn.closest('.accordion-card');
+    const isOpen = card.classList.contains('open');
+    card.classList.toggle('open', !isOpen);
+  }
+
+  /* ── Copy Button ── */
+  function copyCode(btn) {
+    const pre = btn.closest('.code-wrap').querySelector('pre');
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  /* ── Mobile Sidebar Toggle ── */
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const isOpen = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    overlay.classList.toggle('open', !isOpen);
+  }
+
+  /* ── Active Sidebar Link (IntersectionObserver) ── */
+  (function () {
+    const sections = document.querySelectorAll(
+      '#api-reference, #test-1, #test-2, #test-3, #test-4, #test-5, #test-6, #test-7, #test-8, #test-9, #test-10, #test-11, #error-reference, #notes'
+    );
+    const navLinks = document.querySelectorAll('#sidebar a');
+
+    const idToLink = {};
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        idToLink[href.slice(1)] = link;
+      }
+    });
+
+    let current = '';
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          current = entry.target.id;
+        }
+      });
+      navLinks.forEach(l => l.classList.remove('active'));
+      if (idToLink[current]) idToLink[current].classList.add('active');
+    }, {
+      rootMargin: '-56px 0px -60% 0px',
+      threshold: 0
+    });
+
+    sections.forEach(s => observer.observe(s));
+
+    /* Close sidebar on link click (mobile) */
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 720) {
+          document.getElementById('sidebar').classList.remove('open');
+          document.getElementById('overlay').classList.remove('open');
+        }
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
