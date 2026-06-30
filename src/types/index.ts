@@ -20,6 +20,7 @@ declare global {
       clientId: string;
       clientName: string;
       allowedDomain: string;
+      dailyLimit: number;
       smtpConfig?: SmtpConfig;
       user?: JwtPayload;
     }

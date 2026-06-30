@@ -8,6 +8,7 @@ import { emailQueue } from '../services/queue';
 import { filterSuppressed } from '../services/suppression';
 import { applyTemplate, injectUnsubscribeLink } from '../services/unsubscribe';
 import { sanitizeEmailBody } from '../services/sanitize';
+import { pool } from '../services/db';
 import { config } from '../config';
 import type { BulkJobData } from '../types';
 
@@ -169,6 +170,20 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     if (!senderAllowed(from, req.allowedDomain)) {
       res.status(400).json({ error: `Sender domain is not allowed. Your key is restricted to: ${req.allowedDomain}` });
       return;
+    }
+
+    // Per-client daily limit check
+    if (req.dailyLimit > 0) {
+      const { rows: countRows } = await pool.query<{ today_count: string }>(
+        `SELECT COUNT(*) AS today_count FROM email_logs
+         WHERE client_id = $1 AND sent_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date`,
+        [req.clientId]
+      );
+      const todayCount = parseInt(countRows[0]?.today_count ?? '0', 10);
+      if (todayCount >= req.dailyLimit) {
+        res.status(429).json({ error: `Daily sending limit of ${req.dailyLimit} emails reached. Resets at midnight UTC.` });
+        return;
+      }
     }
 
     // Parse globalVars

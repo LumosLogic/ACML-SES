@@ -7,6 +7,7 @@ interface CacheEntry {
   clientId: string;
   clientName: string;
   allowedDomain: string;
+  dailyLimit: number;
   smtpHost?: string;
   smtpPort?: number;
   smtpUser?: string;
@@ -26,13 +27,14 @@ async function resolveKey(key: string): Promise<CacheEntry | null> {
     id: string;
     client_name: string;
     allowed_domain: string;
+    daily_limit: number;
     smtp_host?: string;
     smtp_port?: number;
     smtp_user?: string;
     smtp_pass?: string;
     ses_config_set?: string;
   }>(
-    'SELECT id, client_name, allowed_domain, smtp_host, smtp_port, smtp_user, smtp_pass, ses_config_set FROM api_keys WHERE key = $1 AND is_active = TRUE LIMIT 1',
+    'SELECT id, client_name, allowed_domain, daily_limit, smtp_host, smtp_port, smtp_user, smtp_pass, ses_config_set FROM api_keys WHERE key = $1 AND is_active = TRUE LIMIT 1',
     [key]
   );
 
@@ -45,6 +47,7 @@ async function resolveKey(key: string): Promise<CacheEntry | null> {
     clientId: rows[0].id,
     clientName: rows[0].client_name,
     allowedDomain: rows[0].allowed_domain,
+    dailyLimit: rows[0].daily_limit ?? 0,
     smtpHost: rows[0].smtp_host ?? undefined,
     smtpPort: rows[0].smtp_port ?? undefined,
     smtpUser: rows[0].smtp_user ?? undefined,
@@ -75,6 +78,7 @@ export async function requireApiKey(req: Request, res: Response, next: NextFunct
   req.clientId      = entry.clientId;
   req.clientName    = entry.clientName;
   req.allowedDomain = entry.allowedDomain;
+  req.dailyLimit    = entry.dailyLimit;
   req.smtpConfig    = entry.smtpHost ? {
     host: entry.smtpHost,
     port: entry.smtpPort!,
