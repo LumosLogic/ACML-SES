@@ -38,39 +38,36 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop — mobile only, shown when sidebar is open */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+      {/* Backdrop — mobile only */}
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className={
+          isOpen
+            ? "fixed inset-0 bg-black/50 z-10 lg:hidden"
+            : "hidden"
+        }
+      />
 
       {/* Sidebar panel */}
       <aside
-        className={[
-          "fixed left-0 top-0 h-full w-[220px] bg-slate-900 flex flex-col z-20",
-          "transition-transform duration-300 ease-in-out",
-          // Mobile: slide in/out; desktop: always visible
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:translate-x-0",
-        ].join(" ")}
+        style={{ transform: isOpen ? "translateX(0)" : undefined }}
+        className="fixed left-0 top-0 h-full w-[220px] bg-slate-900 flex flex-col z-20 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out"
       >
         {/* Header */}
         <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
           <h2 className="text-white font-bold text-sm tracking-wide uppercase">Email Dashboard</h2>
-          {/* Close button — mobile only */}
+          {/* Close — mobile only */}
           <button
             onClick={onClose}
-            className="lg:hidden text-slate-400 hover:text-white transition-colors p-0.5"
+            className="lg:hidden text-slate-400 hover:text-white transition-colors"
             aria-label="Close sidebar"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Company display — client role */}
+        {/* Company — client role */}
         {role === "client" && selectedClientName && (
           <div className="px-3 pt-3 pb-1">
             <p className="text-xs text-slate-500 uppercase tracking-wide px-2 mb-1.5 flex items-center gap-1.5">
@@ -82,7 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         )}
 
-        {/* Company selector — admin only */}
+        {/* Company selector — admin */}
         {role === "admin" && clients.length > 0 && (
           <div className="px-3 pt-3 pb-1">
             <p className="text-xs text-slate-500 uppercase tracking-wide px-2 mb-1.5 flex items-center gap-1.5">
@@ -100,7 +97,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         )}
 
-        {/* Navigation */}
+        {/* Nav */}
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.map(({ label, href, icon: Icon }) => {
             const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href)

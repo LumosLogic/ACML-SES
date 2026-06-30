@@ -22,7 +22,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return
     }
     if (!isAuthenticated()) {
-      router.replace("/login")
+      router.replace("/landing")
     } else {
       setReady(true)
     }
