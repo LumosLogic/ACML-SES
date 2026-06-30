@@ -176,7 +176,7 @@ export default function RecentEmailsPage() {
             <div>
               <h1 className="text-lg font-bold leading-none">Recent Emails</h1>
               <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                Email history from your database
+                Sent email history and delivery status
               </p>
             </div>
           </div>

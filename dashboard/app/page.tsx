@@ -136,9 +136,6 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-lg font-bold leading-none">Email Dashboard</h1>
-                <p className="text-xs text-[var(--muted-foreground)] leading-none mt-0.5">
-                  PostgreSQL Stats
-                </p>
               </div>
             </div>
 
@@ -216,7 +213,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold">{presetLabel[preset]} Overview</h2>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            {selectedClientName ? `Viewing: ${selectedClientName}` : "Email delivery metrics from your database"}
+            {selectedClientName ? `Viewing: ${selectedClientName}` : "Email delivery metrics"}
           </p>
         </div>
 
@@ -234,7 +231,7 @@ export default function Dashboard() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Email Activity Over Time</CardTitle>
-            <CardDescription>Day-by-day breakdown from your database</CardDescription>
+            <CardDescription>Day-by-day sending activity</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -358,7 +355,7 @@ export default function Dashboard() {
       <footer className="border-t border-[var(--border)] mt-12 py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs text-[var(--muted-foreground)]">
-            Email Dashboard — Data from PostgreSQL — Auto-refreshes every 60 seconds
+            Auto-refreshes every 60 seconds
           </p>
         </div>
       </footer>

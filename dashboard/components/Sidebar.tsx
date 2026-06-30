@@ -42,17 +42,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div
         onClick={onClose}
         aria-hidden="true"
-        className={
-          isOpen
-            ? "fixed inset-0 bg-black/50 z-10 lg:hidden"
-            : "hidden"
-        }
+        className={`sidebar-backdrop fixed inset-0 bg-black/50 z-10 lg:hidden ${isOpen ? "sidebar-open" : ""}`}
       />
 
       {/* Sidebar panel */}
       <aside
-        style={{ transform: isOpen ? "translateX(0)" : undefined }}
-        className="fixed left-0 top-0 h-full w-[220px] bg-slate-900 flex flex-col z-20 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out"
+        className={`sidebar-panel fixed left-0 top-0 h-full w-[220px] bg-slate-900 flex flex-col z-20 ${isOpen ? "sidebar-open" : ""}`}
       >
         {/* Header */}
         <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
