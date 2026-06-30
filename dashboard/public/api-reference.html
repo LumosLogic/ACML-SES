@@ -1355,47 +1355,66 @@
     overlay.classList.toggle('open', !isOpen);
   }
 
-  /* ── Active Sidebar Link (IntersectionObserver) ── */
+  /* ── Active Sidebar Link ── */
   (function () {
-    const sections = document.querySelectorAll(
-      '#api-reference, #complete-example, #test-1, #test-2, #test-3, #test-4, #test-5, #test-6, #test-7, #test-8, #test-9, #test-10, #test-11, #error-reference, #notes'
-    );
     const navLinks = document.querySelectorAll('#sidebar a');
-
     const idToLink = {};
     navLinks.forEach(link => {
       const href = link.getAttribute('href');
-      if (href && href.startsWith('#')) {
-        idToLink[href.slice(1)] = link;
-      }
+      if (href && href.startsWith('#')) idToLink[href.slice(1)] = link;
     });
 
-    let current = '';
-
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          current = entry.target.id;
-        }
-      });
+    function setActive(id) {
       navLinks.forEach(l => l.classList.remove('active'));
-      if (idToLink[current]) idToLink[current].classList.add('active');
-    }, {
-      rootMargin: '-56px 0px -60% 0px',
-      threshold: 0
-    });
+      if (idToLink[id]) idToLink[id].classList.add('active');
+    }
 
-    sections.forEach(s => observer.observe(s));
-
-    /* Close sidebar on link click (mobile) */
+    /* Click: set active immediately + open accordion if test link */
+    let scrollLock = false;
     navLinks.forEach(link => {
-      link.addEventListener('click', () => {
+      link.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (!href || !href.startsWith('#')) return;
+        const id = href.slice(1);
+
+        setActive(id);
+
+        /* Open the accordion card if it's a test scenario */
+        if (id.startsWith('test-')) {
+          const card = document.getElementById(id);
+          if (card && !card.classList.contains('open')) {
+            card.classList.add('open');
+          }
+        }
+
+        /* Freeze IntersectionObserver override for 1.2s after click */
+        scrollLock = true;
+        clearTimeout(scrollLock._t);
+        scrollLock._t = setTimeout(function () { scrollLock = false; }, 1200);
+
+        /* Close sidebar on mobile */
         if (window.innerWidth <= 720) {
           document.getElementById('sidebar').classList.remove('open');
           document.getElementById('overlay').classList.remove('open');
         }
       });
     });
+
+    /* IntersectionObserver for passive scroll highlighting (non-test sections) */
+    const sections = document.querySelectorAll(
+      '#api-reference, #complete-example, #test-scenarios, #error-reference, #notes'
+    );
+    let current = '';
+    const observer = new IntersectionObserver(entries => {
+      if (scrollLock) return;
+      entries.forEach(entry => {
+        if (entry.isIntersecting) current = entry.target.id;
+      });
+      /* Map #test-scenarios scroll to no sidebar highlight (clicks handle tests) */
+      if (current && current !== 'test-scenarios') setActive(current);
+    }, { rootMargin: '-56px 0px -50% 0px', threshold: 0 });
+
+    sections.forEach(s => observer.observe(s));
   })();
 </script>
 
