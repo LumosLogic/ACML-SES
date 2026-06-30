@@ -86,8 +86,10 @@ export async function getAdminClientStats(clientId: string, days: number): Promi
   return res.json()
 }
 
-export async function getAdminClientEmails(clientId: string, params: { limit?: number; offset?: number } = {}): Promise<AdminClientEmails> {
+export async function getAdminClientEmails(clientId: string, params: { limit?: number; offset?: number; from?: string; to?: string; days?: number } = {}): Promise<AdminClientEmails> {
   const q = new URLSearchParams({ limit: String(params.limit ?? 100), offset: String(params.offset ?? 0) })
+  if (params.from && params.to) { q.set('from', params.from); q.set('to', params.to) }
+  else if (params.days) { q.set('days', String(params.days)) }
   const res = await fetchAdmin(`/admin/clients/${clientId}/emails?${q}`)
   if (!res.ok) throw new Error('Failed to fetch client emails')
   return res.json()
@@ -137,12 +139,14 @@ export async function getClientStats(params: { days?: number; from?: string; to?
   return res.json()
 }
 
-export async function getClientEmails(params: { limit?: number; offset?: number; search?: string } = {}): Promise<AdminClientEmails> {
+export async function getClientEmails(params: { limit?: number; offset?: number; search?: string; from?: string; to?: string; days?: number } = {}): Promise<AdminClientEmails> {
   const q = new URLSearchParams({
     limit: String(params.limit ?? 100),
     offset: String(params.offset ?? 0),
     ...(params.search ? { search: params.search } : {}),
   })
+  if (params.from && params.to) { q.set('from', params.from); q.set('to', params.to) }
+  else if (params.days) { q.set('days', String(params.days)) }
   const res = await fetchAdmin(`/client/emails?${q}`)
   if (!res.ok) throw new Error('Failed to fetch client emails')
   return res.json()

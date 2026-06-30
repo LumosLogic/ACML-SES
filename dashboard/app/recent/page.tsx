@@ -125,10 +125,10 @@ export default function RecentEmailsPage() {
       const isClient = effectiveRole === "client"
       let data: { emails: EmailLogEntry[] }
       if (isAdmin && selectedClientId) {
-        const adminData = await getAdminClientEmails(selectedClientId, { limit })
+        const adminData = await getAdminClientEmails(selectedClientId, params)
         data = { emails: adminData.emails as EmailLogEntry[] }
       } else if (isClient) {
-        const clientData = await getClientEmails({ limit })
+        const clientData = await getClientEmails(params)
         data = { emails: clientData.emails as unknown as EmailLogEntry[] }
       } else {
         data = await getRecentEmails(params)
