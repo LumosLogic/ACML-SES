@@ -631,8 +631,7 @@
     <a href="#test-7"><span class="sidebar-num">7</span>Content Sanitisation</a>
     <a href="#test-8"><span class="sidebar-num">8</span>Daily Limit Behaviour</a>
     <a href="#test-9"><span class="sidebar-num">9</span>Per-Recipient Variables</a>
-    <a href="#test-10"><span class="sidebar-num">10</span>Scheduled Email</a>
-    <a href="#test-11"><span class="sidebar-num">11</span>CSV Bulk Send</a>
+    <a href="#test-10"><span class="sidebar-num">10</span>CSV Send</a>
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Reference</div>
@@ -661,7 +660,7 @@
         </div>
 
         <p class="intro-text">
-          The LumosMails API lets you send transactional and bulk email programmatically via a single HTTP endpoint.
+          The LumosMails API lets you send transactional email programmatically via a single HTTP endpoint.
           All requests use <strong>multipart/form-data</strong> and are authenticated with your API key.
         </p>
 
@@ -717,7 +716,7 @@
                 <td>body</td>
                 <td>string</td>
                 <td><span class="badge-req badge-yes">Yes</span></td>
-                <td>Email body (HTML or plain text). Supports <code>{{variable}}</code> and <code>{{unsubscribe_url}}</code>.</td>
+                <td>Email body (HTML or plain text). Supports <code>{{variable}}</code> placeholders.</td>
               </tr>
               <tr>
                 <td>isHtml</td>
@@ -750,22 +749,10 @@
                 <td>JSON object applied to all recipients, e.g. <code>{"company":"LumosMails"}</code>. Per-recipient vars override these.</td>
               </tr>
               <tr>
-                <td>send_at</td>
-                <td>string</td>
-                <td><span class="badge-req badge-no">No</span></td>
-                <td>ISO 8601 datetime to schedule delivery, e.g. <code>2026-07-10T09:00:00Z</code></td>
-              </tr>
-              <tr>
                 <td>attachments</td>
                 <td>file(s)</td>
                 <td><span class="badge-req badge-no">No</span></td>
                 <td>Up to 3 files, max 2 MB each. Allowed: PDF, JPG, PNG, GIF, WEBP, DOC, DOCX, XLS, XLSX, TXT, CSV, ZIP.</td>
-              </tr>
-              <tr>
-                <td>callback_url</td>
-                <td>string</td>
-                <td><span class="badge-req badge-no">No</span></td>
-                <td>Webhook URL called when a bulk job completes.</td>
               </tr>
             </tbody>
           </table>
@@ -773,22 +760,20 @@
 
         <!-- ── Response Format ── -->
         <h3 class="sub-heading">Response Format</h3>
-        <p class="intro-text">The API returns JSON. The shape depends on whether the send is immediate or queued/scheduled.</p>
+        <p class="intro-text">The API returns JSON with the send status and per-recipient results.</p>
 
-        <h3 class="sub-heading" style="font-size:15px;margin-top:18px;">Standard Response</h3>
         <div class="code-wrap">
           <div class="code-header">
             <span class="code-lang">JSON</span>
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           </div>
           <pre><span class="j-punc">{</span>
-  <span class="j-key">"status"</span><span class="j-punc">:</span> <span class="j-str">"sent | partial | failed | queued | scheduled | skipped"</span><span class="j-punc">,</span>
+  <span class="j-key">"status"</span><span class="j-punc">:</span> <span class="j-str">"sent | partial | failed"</span><span class="j-punc">,</span>
   <span class="j-key">"summary"</span><span class="j-punc">:</span> <span class="j-punc">{</span>
     <span class="j-key">"total_requested"</span><span class="j-punc">:</span>    <span class="j-num">10</span><span class="j-punc">,</span>
     <span class="j-key">"sent"</span><span class="j-punc">:</span>               <span class="j-num">8</span><span class="j-punc">,</span>
     <span class="j-key">"failed"</span><span class="j-punc">:</span>             <span class="j-num">0</span><span class="j-punc">,</span>
-    <span class="j-key">"suppressed"</span><span class="j-punc">:</span>         <span class="j-num">2</span><span class="j-punc">,</span>
-    <span class="j-key">"blocked_by_daily_limit"</span><span class="j-punc">:</span> <span class="j-num">0</span>
+    <span class="j-key">"blocked_by_daily_limit"</span><span class="j-punc">:</span> <span class="j-num">2</span>
   <span class="j-punc">},</span>
   <span class="j-key">"warning"</span><span class="j-punc">:</span> <span class="j-str">"Daily limit of 5000 emails reached. 2 email(s) were not sent. Resets at midnight IST."</span><span class="j-punc">,</span>
   <span class="j-key">"results"</span><span class="j-punc">:</span> <span class="j-punc">[</span>
@@ -798,22 +783,6 @@
       <span class="j-key">"messageId"</span><span class="j-punc">:</span> <span class="j-str">"abc123"</span>
     <span class="j-punc">}</span>
   <span class="j-punc">]</span>
-<span class="j-punc">}</span></pre>
-        </div>
-
-        <h3 class="sub-heading" style="font-size:15px;margin-top:18px;">Bulk / Scheduled Response <span style="font-size:12px;color:var(--text-muted);font-weight:400;">&gt;50 recipients or send_at set</span></h3>
-        <div class="code-wrap">
-          <div class="code-header">
-            <span class="code-lang">JSON</span>
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          </div>
-          <pre><span class="j-punc">{</span>
-  <span class="j-key">"status"</span><span class="j-punc">:</span>            <span class="j-str">"queued | scheduled"</span><span class="j-punc">,</span>
-  <span class="j-key">"job_id"</span><span class="j-punc">:</span>           <span class="j-str">"42"</span><span class="j-punc">,</span>
-  <span class="j-key">"total_recipients"</span><span class="j-punc">:</span> <span class="j-num">500</span><span class="j-punc">,</span>
-  <span class="j-key">"skipped"</span><span class="j-punc">:</span>          <span class="j-num">3</span><span class="j-punc">,</span>
-  <span class="j-key">"poll_url"</span><span class="j-punc">:</span>         <span class="j-str">"/api/job-status/42"</span><span class="j-punc">,</span>
-  <span class="j-key">"send_at"</span><span class="j-punc">:</span>          <span class="j-str">"2026-07-10T09:00:00Z"</span>
 <span class="j-punc">}</span></pre>
         </div>
       </div>
@@ -850,7 +819,7 @@
   <span class="sh-comment"># ── Subject &amp; Body ───────────────────────────────────</span>
   <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Hello {{name}}!"</span> <span class="sh-bs">\</span>
   <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;Your role: &lt;strong&gt;{{role}}&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;{{unsubscribe_url}}&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span> <span class="sh-bs">\</span>
+  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body&gt;&lt;h2&gt;Hello {{name}},&lt;/h2&gt;&lt;p&gt;Your role: &lt;strong&gt;{{role}}&lt;/strong&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span> <span class="sh-bs">\</span>
   <span class="sh-bs">\</span>
   <span class="sh-comment"># ── Optional Headers ─────────────────────────────────</span>
   <span class="sh-kw">--form-string</span> <span class="sh-str">"replyTo=support@yourdomain.com"</span> <span class="sh-bs">\</span>
@@ -862,13 +831,7 @@
   <span class="sh-bs">\</span>
   <span class="sh-comment"># ── Attachments (up to 3, max 2 MB each) ─────────────</span>
   <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/document.pdf"</span> <span class="sh-bs">\</span>
-  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/image.png"</span> <span class="sh-bs">\</span>
-  <span class="sh-bs">\</span>
-  <span class="sh-comment"># ── Scheduling ───────────────────────────────────────</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"send_at=2026-07-10T09:00:00Z"</span> <span class="sh-bs">\</span>
-  <span class="sh-bs">\</span>
-  <span class="sh-comment"># ── Webhook Callback ─────────────────────────────────</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"callback_url=https://yourapp.com/webhook/email-done"</span></pre>
+  <span class="sh-flag">-F</span> <span class="sh-str">"attachments=@/path/to/image.png"</span></pre>
         </div>
 
         <div class="info-box">
@@ -1131,34 +1094,11 @@
         </div>
 
         <!-- Test 10 -->
+        <!-- Test 10 (was 11) -->
         <div class="accordion-card" id="test-10">
           <button class="accordion-header" onclick="toggleAccordion(this)">
             <span class="accordion-num">10</span>
-            <span class="accordion-title">Scheduled Email</span>
-            <span class="accordion-chevron">&#8964;</span>
-          </button>
-          <div class="accordion-body">
-            <p class="accordion-desc">Schedule an email to be sent at a future date/time using <code>send_at</code> (ISO format). Returns a <code>job_id</code> to poll status.</p>
-            <div class="expected-pill">Expected: {"status":"scheduled","job_id":"...","send_at":"...","poll_url":"/api/job-status/..."}</div>
-            <div class="code-wrap">
-              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              <pre><span class="sh-cmd">curl</span> -X POST <span class="sh-url">https://lumosmails.lumoslogic.com/api/send</span> <span class="sh-bs">\</span>
-  <span class="sh-flag">-H</span> <span class="sh-str">"X-Api-Key: YOUR_API_KEY"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"from=LumosMails &lt;hello@mail.yourdomain.com&gt;"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"to=you@example.com"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"subject=Scheduled Email Test"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"isHtml=true"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">"send_at=2026-07-10T09:00:00Z"</span> <span class="sh-bs">\</span>
-  <span class="sh-kw">--form-string</span> <span class="sh-str">'body=&lt;html&gt;&lt;body style="font-family:Arial,sans-serif;padding:30px;"&gt;&lt;h2&gt;Scheduled Email&lt;/h2&gt;&lt;p&gt;This email was scheduled and delivered at the specified time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'</span></pre>
-            </div>
-          </div>
-        </div>
-
-        <!-- Test 11 -->
-        <div class="accordion-card" id="test-11">
-          <button class="accordion-header" onclick="toggleAccordion(this)">
-            <span class="accordion-num">11</span>
-            <span class="accordion-title">CSV Bulk Send</span>
+            <span class="accordion-title">CSV Send</span>
             <span class="accordion-chevron">&#8964;</span>
           </button>
           <div class="accordion-body">
@@ -1263,23 +1203,9 @@
 
         <div class="notes-list">
           <div class="note-card">
-            <div class="note-icon">&#8649;</div>
-            <div>
-              <p><strong>Bulk sending:</strong> Requests with more than 50 recipients are automatically queued as background jobs. The response returns a <code>job_id</code> instead of immediate results. Poll <code>/api/job-status/{job_id}</code> to track progress and retrieve final delivery stats.</p>
-            </div>
-          </div>
-
-          <div class="note-card">
             <div class="note-icon">&#123;&#125;</div>
             <div>
-              <p><strong>Template variables:</strong> Use <code>{{variable_name}}</code> placeholders anywhere in the <code>subject</code> or <code>body</code>. At send time they are replaced with values from each recipient's <code>vars</code> object (from <code>recipients</code> or CSV columns). Values from <code>globalVars</code> serve as defaults and are overridden by per-recipient vars.</p>
-            </div>
-          </div>
-
-          <div class="note-card">
-            <div class="note-icon">&#8617;</div>
-            <div>
-              <p><strong>Unsubscribe:</strong> Add <code>{{unsubscribe_url}}</code> anywhere in the email body to automatically inject a unique, per-recipient unsubscribe link. Recipients who click it are suppressed from future sends.</p>
+              <p><strong>Template variables:</strong> Use <code>{{variable_name}}</code> placeholders anywhere in the <code>subject</code> or <code>body</code>. At send time they are replaced with values from each recipient's <code>vars</code> object (from <code>recipients</code> JSON or CSV columns). Values from <code>globalVars</code> serve as defaults and are overridden by per-recipient vars.</p>
             </div>
           </div>
 
@@ -1294,13 +1220,6 @@
             <div class="note-icon">&#8987;</div>
             <div>
               <p><strong>Daily limit:</strong> Each API key has a daily email send quota. The quota resets at <strong>midnight IST (Asia/Kolkata)</strong>. Partial sends are allowed &mdash; emails up to the remaining quota go through, and any beyond are blocked with a <code>blocked_by_daily_limit</code> count in the response. Once fully exhausted, the API returns HTTP 429 until reset.</p>
-            </div>
-          </div>
-
-          <div class="note-card">
-            <div class="note-icon">&#128683;</div>
-            <div>
-              <p><strong>Suppression:</strong> Addresses that have previously hard-bounced or generated a spam complaint are automatically suppressed. They are skipped silently during sending and counted in the <code>suppressed</code> field of the response summary &mdash; no error is raised.</p>
             </div>
           </div>
         </div>
