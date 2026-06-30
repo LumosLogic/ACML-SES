@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Mail, LogOut, Key, Users, Building2, X } from "lucide-react"
+import { LayoutDashboard, Mail, LogOut, Key, Users, Building2, X, BookOpen } from "lucide-react"
 import { clearAuth } from "@/lib/auth"
 import { useClient } from "@/lib/clientContext"
 
@@ -112,6 +112,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </Link>
             )
           })}
+
+          {/* Docs section */}
+          <div className="pt-3 pb-1">
+            <p className="text-xs text-slate-500 uppercase tracking-wide px-2 mb-1.5">Docs</p>
+          </div>
+          <a
+            href="/api-reference.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            <BookOpen className="h-4 w-4 shrink-0" />
+            API Reference
+          </a>
         </nav>
 
         {/* Profile + Logout */}

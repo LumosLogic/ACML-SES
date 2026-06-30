@@ -119,6 +119,7 @@ export default function LandingPage() {
               <a href="#features"     className="text-sm text-slate-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-sm text-slate-400 hover:text-white transition-colors">How It Works</a>
               <a href="#stats"        className="text-sm text-slate-400 hover:text-white transition-colors">Stats</a>
+              <a href="/api-reference.html" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-white transition-colors">API Docs</a>
             </div>
 
             <div className="flex items-center gap-2">
@@ -144,6 +145,7 @@ export default function LandingPage() {
                 { label: "Features",     href: "#features" },
                 { label: "How It Works", href: "#how-it-works" },
                 { label: "Stats",        href: "#stats" },
+                { label: "API Docs",     href: "/api-reference.html" },
                 { label: "Sign In",      href: "/login" },
               ].map(({ label, href }) => (
                 <a key={label} href={href}
@@ -330,6 +332,7 @@ export default function LandingPage() {
             <Link href="/login"       className="text-xs text-slate-500 hover:text-white transition-colors">Sign In</Link>
             <a href="#features"       className="text-xs text-slate-500 hover:text-white transition-colors">Features</a>
             <a href="#how-it-works"   className="text-xs text-slate-500 hover:text-white transition-colors">How It Works</a>
+            <a href="/api-reference.html" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-white transition-colors">API Docs</a>
           </div>
         </div>
       </footer>
