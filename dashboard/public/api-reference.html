@@ -1311,10 +1311,14 @@
 </div><!-- /layout -->
 
 <script>
-  /* ── Accordion ── */
+  /* ── Accordion (one open at a time) ── */
   function toggleAccordion(btn) {
     var card = btn.closest('.accordion-card');
-    card.classList.toggle('open');
+    var isOpen = card.classList.contains('open');
+    document.querySelectorAll('.accordion-card.open').forEach(function(c) {
+      c.classList.remove('open');
+    });
+    if (!isOpen) card.classList.add('open');
   }
 
   /* ── Copy Button ── */
@@ -1379,12 +1383,13 @@
 
         setActive(id);
 
-        /* Open the accordion card if it's a test scenario */
+        /* Open the accordion card if it's a test scenario (close others first) */
         if (id.startsWith('test-')) {
+          document.querySelectorAll('.accordion-card.open').forEach(function(c) {
+            c.classList.remove('open');
+          });
           const card = document.getElementById(id);
-          if (card && !card.classList.contains('open')) {
-            card.classList.add('open');
-          }
+          if (card) card.classList.add('open');
         }
 
         /* Freeze IntersectionObserver override for 1.2s after click */
