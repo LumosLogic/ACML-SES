@@ -40,7 +40,7 @@ router.get('/stats', async (req: Request, res: Response) => {
   res.json({ summary, timeseries, from: from.toISOString(), to: to.toISOString() });
 });
 
-// GET /client/emails?limit=100&offset=0&search=
+// GET /client/emails?limit=100&offset=0&search=&from=YYYY-MM-DD&to=YYYY-MM-DD&days=7
 router.get('/emails', async (req: Request, res: Response) => {
   const clientId = req.user?.clientId;
   if (!clientId) { res.status(403).json({ error: 'No client associated with this account' }); return; }
@@ -48,13 +48,28 @@ router.get('/emails', async (req: Request, res: Response) => {
   const limit  = Math.min(parseInt((req.query.limit  as string) || '100'), 1000);
   const offset = parseInt((req.query.offset as string) || '0');
   const search = (req.query.search as string | undefined)?.trim();
+  const from   = req.query.from as string | undefined;
+  const to     = req.query.to   as string | undefined;
+  const days   = req.query.days ? parseInt(req.query.days as string) : undefined;
 
-  const params: (string | number)[] = [clientId];
-  let extraWhere = '';
+  const params: (string | number | Date)[] = [clientId];
+  const whereClauses: string[] = [];
+
   if (search) {
     params.push(`%${search}%`);
-    extraWhere = `AND (recipient ILIKE $${params.length} OR subject ILIKE $${params.length})`;
+    whereClauses.push(`(recipient ILIKE $${params.length} OR subject ILIKE $${params.length})`);
   }
+  if (from && to) {
+    params.push(new Date(from));
+    whereClauses.push(`sent_at >= $${params.length}`);
+    params.push(new Date(to + 'T23:59:59.999Z'));
+    whereClauses.push(`sent_at <= $${params.length}`);
+  } else if (days) {
+    params.push(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
+    whereClauses.push(`sent_at >= $${params.length}`);
+  }
+
+  const extraWhere = whereClauses.length ? 'AND ' + whereClauses.join(' AND ') : '';
 
   const { rows } = await pool.query(
     `SELECT id, message_id AS "messageId", recipient, subject,
@@ -69,7 +84,7 @@ router.get('/emails', async (req: Request, res: Response) => {
 
   const { rows: countRows } = await pool.query(
     `SELECT COUNT(*) FROM email_logs WHERE client_id = $1 ${extraWhere}`,
-    params.slice(0, search ? 2 : 1)
+    params.slice(0, params.length)
   );
 
   res.json({ total: parseInt(countRows[0].count), limit, offset, emails: rows });
