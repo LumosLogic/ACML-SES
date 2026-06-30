@@ -252,14 +252,6 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       }
     }
 
-    // Deduplicate recipients — keep first occurrence of each email
-    const seenEmails = new Set<string>();
-    entries = entries.filter(e => {
-      const lower = e.email.toLowerCase();
-      if (seenEmails.has(lower)) return false;
-      seenEmails.add(lower);
-      return true;
-    });
 
     // Trim recipients to remaining daily quota
     let dailyLimitWarning: string | undefined;
