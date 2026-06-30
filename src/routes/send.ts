@@ -4,8 +4,7 @@ import { parse } from 'csv-parse/sync';
 import { randomUUID } from 'crypto';
 import { sendEmail } from '../services/mailer';
 import { logEmail } from '../services/emailLog';
-import { filterSuppressed } from '../services/suppression';
-import { applyTemplate, injectUnsubscribeLink } from '../services/unsubscribe';
+import { applyTemplate } from '../services/unsubscribe';
 import { sanitizeEmailBody } from '../services/sanitize';
 import { pool } from '../services/db';
 import { config } from '../config';
@@ -256,22 +255,6 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
     // Merge globalVars (per-recipient vars override global)
     entries = mergeGlobalVars(entries, globalVars);
 
-    // --- Filter suppressed ---
-    const emails = entries.map(e => e.email);
-    const { allowed: allowedEmails, skipped } = await filterSuppressed(emails);
-    const allowedSet = new Set(allowedEmails);
-    const allowedEntries = entries.filter(e => allowedSet.has(e.email));
-
-    if (allowedEntries.length === 0) {
-      res.status(200).json({
-        status: 'skipped',
-        message: 'All recipients are suppressed (bounced or complained previously).',
-        total: entries.length,
-        skipped: skipped.length,
-      });
-      return;
-    }
-
     // Validate real file type via magic bytes and sanitize filenames
     for (const f of [...attachmentFiles, ...inlineImageFiles]) {
       const realMime = detectMimeFromBytes(f.buffer);
@@ -296,10 +279,10 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
 
     // --- Send directly ---
     const results = await Promise.allSettled(
-        allowedEntries.map(({ email, vars }) => {
+        entries.map(({ email, vars }) => {
           const finalVars = { ...vars, email };
           const renderedSubject = applyTemplate(subject, finalVars);
-          const renderedBody = injectUnsubscribeLink(sanitizeEmailBody(applyTemplate(body, finalVars), isHtml), email, isHtml);
+          const renderedBody = sanitizeEmailBody(applyTemplate(body, finalVars), isHtml);
 
           return sendEmail({
             to: email,
@@ -330,7 +313,7 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       );
 
       const report = results.map((r, i) => ({
-        email: allowedEntries[i].email,
+        email: entries[i].email,
         ...(r.status === 'fulfilled'
           ? { status: 'sent', messageId: r.value.messageId }
           : { status: 'failed', error: (r.reason as Error).message }),
@@ -344,10 +327,9 @@ router.post('/send', uploadFields, async (req: Request, res: Response, next: Nex
       res.status(sentCount === 0 ? 500 : 200).json({
         status: overallStatus,
         summary: {
-          total_requested: report.length + skipped.length + blockedByLimit,
+          total_requested: report.length + blockedByLimit,
           sent: sentCount,
           failed: failedCount,
-          suppressed: skipped.length,
           blocked_by_daily_limit: blockedByLimit,
         },
         ...(dailyLimitWarning ? { warning: dailyLimitWarning } : {}),

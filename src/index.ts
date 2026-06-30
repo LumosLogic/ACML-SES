@@ -11,8 +11,6 @@ import sendRoutes from './routes/send';
 import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/admin';
 import clientRoutes from './routes/clientRoutes';
-import unsubscribeRoutes from './routes/unsubscribe';
-import suppressionRoutes from './routes/suppressions';
 import emailRoutes from './routes/email';
 import metricsRoutes from './routes/metrics';
 import statsRoutes from './routes/stats';
@@ -51,7 +49,6 @@ app.get('/panel', (_req, res) => res.sendFile(path.join(__dirname, '../public/pa
 
 // Public routes — no auth needed
 app.use('/webhooks', webhookRoutes);      // SNS signature verified inside
-app.use('/', unsubscribeRoutes);          // /unsubscribe?email=&token=
 app.use('/docs', docsRoutes);             // Swagger UI
 
 // Auth routes — public
@@ -65,8 +62,6 @@ app.use('/client', requireAuth, clientRoutes);
 
 // Send routes — strict rate limit (multipart + JSON)
 app.use('/api', rateLimiter, requireApiKey, sendRoutes);
-// Suppression management — strict rate limit
-app.use('/api', rateLimiter, requireApiKey, suppressionRoutes);
 // Dashboard read-only routes — relaxed rate limit
 app.use('/api', dashboardLimiter, requireApiKey, emailRoutes);
 app.use('/api', dashboardLimiter, requireApiKey, metricsRoutes);

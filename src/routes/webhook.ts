@@ -1,7 +1,6 @@
 import { Router, Request, Response, text } from 'express';
 import { createVerify } from 'crypto';
 import { updateEmailEvent } from '../services/emailLog';
-import { suppressEmail } from '../services/suppression';
 
 const router = Router();
 
@@ -97,21 +96,8 @@ router.post('/ses', async (req: Request, res: Response) => {
       await updateEmailEvent(mail.messageId, 'opened');
     } else if (eventType === 'Bounce') {
       await updateEmailEvent(mail.messageId, 'bounced');
-      // Auto-suppress all hard-bounced addresses to protect SES reputation
-      const bounce = message.bounce;
-      if (bounce?.bounceType === 'Permanent') {
-        const addresses: string[] = (bounce.bouncedRecipients ?? []).map(
-          (r: { emailAddress: string }) => r.emailAddress
-        );
-        await Promise.all(addresses.map(email => suppressEmail(email, 'bounce')));
-      }
     } else if (eventType === 'Complaint') {
-      // Suppress anyone who marked as spam
-      const complaint = message.complaint;
-      const addresses: string[] = (complaint?.complainedRecipients ?? []).map(
-        (r: { emailAddress: string }) => r.emailAddress
-      );
-      await Promise.all(addresses.map(email => suppressEmail(email, 'complaint')));
+      // log only — no suppression
     }
 
     res.status(200).send('OK');

@@ -19,8 +19,6 @@ export const config = {
   },
   maxRecipientsPerRequest: parseInt(process.env.MAX_RECIPIENTS || '10000'),
   bulkThreshold: parseInt(process.env.BULK_THRESHOLD || '50'),
-  unsubscribeBaseUrl: process.env.UNSUBSCRIBE_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
-  unsubscribeSecret: process.env.UNSUBSCRIBE_SECRET || 'change-this-in-production',
   jwtSecret: process.env.JWT_SECRET || 'change-this-jwt-secret',
   adminUsername: process.env.ADMIN_USERNAME || '',
   adminEmail: process.env.ADMIN_EMAIL || '',
