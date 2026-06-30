@@ -13,7 +13,7 @@ export const config = {
   ses: {
     configSet: process.env.SES_CONFIG_SET || 'recruitx-config',
     defaultFrom: process.env.SES_DEFAULT_FROM || '',
-    sendRate: parseInt(process.env.SES_SEND_RATE || '14'),
+    sendRate: parseInt(process.env.SES_SEND_RATE || '100'),
     allowedFromDomains: (process.env.ALLOWED_FROM_DOMAINS || '')
       .split(',').map(d => d.trim()).filter(Boolean),
   },
